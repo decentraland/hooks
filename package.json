@@ -74,8 +74,8 @@
     "preset": "ts-jest",
     "testEnvironment": "jsdom",
     "moduleNameMapper": {
-      "^src/(.*)$": "<rootDir>/src/$1",
-      "^test/(.*)$": "<rootDir>/src/test/$1"
+      "^test/(.*)$": "<rootDir>/test/$1",
+      "^src/(.*)$": "<rootDir>/src/$1"
     }
   }
 }

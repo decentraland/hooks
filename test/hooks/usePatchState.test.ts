@@ -1,5 +1,5 @@
 import { act, renderHook } from "@testing-library/react/pure"
-import { usePatchState } from "../../hooks/usePatchState"
+import { usePatchState } from "../../src/hooks/usePatchState"
 
 describe("usePatchState", () => {
   beforeEach(() => {
