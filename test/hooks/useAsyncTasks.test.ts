@@ -1,7 +1,7 @@
 import { act, renderHook } from "@testing-library/react/pure"
-import { useAsyncTasks } from "../../hooks/useAsyncTasks"
+import { useAsyncTasks } from "../../src/hooks/useAsyncTasks"
 
-jest.mock("test/__mocks__/sentry")
+jest.mock("../__mocks__/sentry")
 
 describe("useAsyncTasks", () => {
   beforeEach(() => {

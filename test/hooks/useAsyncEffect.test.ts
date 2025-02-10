@@ -1,7 +1,7 @@
 import { renderHook } from "@testing-library/react/pure"
-import { useAsyncEffect } from "../../hooks/useAsyncEffect"
+import { useAsyncEffect } from "../../src/hooks/useAsyncEffect"
 
-jest.mock("test/__mocks__/sentry")
+jest.mock("../__mocks__/sentry")
 
 describe("useAsyncEffect", () => {
   beforeEach(() => {

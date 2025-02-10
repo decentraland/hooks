@@ -4,7 +4,11 @@
     "module": "commonjs",
     "outDir": "cjs",
     "target": "es6",
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "paths": {
+      "ua-parser-js/helpers": ["node_modules/ua-parser-js/src/helpers/ua-parser-helpers"]
+    }
   },
   "exclude": ["node_modules", "dist", "esm", "cjs", "test"]
 }

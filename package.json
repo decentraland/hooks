@@ -1,5 +1,5 @@
 {
-  "name": "decentraland-hooks",
+  "name": "@dcl/hooks",
   "version": "0.0.0-development",
   "main": "cjs/index.js",
   "module": "esm/index.js",
@@ -74,8 +74,8 @@
     "preset": "ts-jest",
     "testEnvironment": "jsdom",
     "moduleNameMapper": {
-      "^src/(.*)$": "<rootDir>/src/$1",
-      "^test/(.*)$": "<rootDir>/src/test/$1"
+      "^test/(.*)$": "<rootDir>/test/$1",
+      "^src/(.*)$": "<rootDir>/src/$1"
     }
   }
 }
