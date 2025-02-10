@@ -1,5 +1,5 @@
 {
-  "name": "decentraland-hooks",
+  "name": "@dcl/hooks",
   "version": "0.0.0-development",
   "main": "cjs/index.js",
   "module": "esm/index.js",
