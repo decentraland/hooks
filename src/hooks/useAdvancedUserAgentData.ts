@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { UAParser } from "ua-parser-js"
-import { isAppleSilicon } from "../utils/isAppleSilicon"
+import { isAppleSilicon } from "ua-parser-js/helpers"
 import { useAsyncEffect } from "./useAsyncEffect"
 const DEFAULT_VALUE = "Unknown"
 
