@@ -1,10 +1,13 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "Node16",
     "outDir": "cjs",
     "target": "es6",
-    "moduleResolution": "node"
+    "moduleResolution": "node16",
+    "paths": {
+      "ua-parser-js/helpers": ["./node_modules/ua-parser-js/src/helpers/ua-parser-helpers"]
+    }
   },
   "exclude": ["node_modules", "dist", "esm", "cjs", "test"]
 }
