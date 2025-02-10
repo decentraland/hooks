@@ -1,9 +1,9 @@
-name: Test
+name: Build
 
 on: [pull_request]
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@main
@@ -14,6 +14,5 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Test
-        run: npm run test:coverage
-        if: ${{ always() }}
+      - name: Build
+        run: npm run build
