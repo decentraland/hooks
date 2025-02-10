@@ -23,6 +23,6 @@ jobs:
       - run: npm run build
 
       - name: Publish
-        uses: menduz/oddish-action@2.0.1
+        uses: decentraland/oddish-action@master
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
