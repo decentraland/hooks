@@ -24,6 +24,8 @@ jobs:
         with:
           deterministic-snapshot: true
           only-update-versions: true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Install
         run: npm ci
