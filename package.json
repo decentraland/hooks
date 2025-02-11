@@ -64,12 +64,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/decentraland/decentraland-hooks.git"
+    "url": "https://github.com/decentraland/hooks"
   },
   "bugs": {
-    "url": "https://github.com/decentraland/decentraland-hooks/issues"
+    "url": "https://github.com/decentraland/hooks/issues"
   },
-  "homepage": "https://github.com/decentraland/decentraland-hooks#readme",
+  "homepage": "https://github.com/decentraland/hooks#readme",
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "jsdom",
