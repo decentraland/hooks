@@ -26,5 +26,8 @@ jobs:
 
       - name: Publish
         uses: decentraland/oddish-action@master
+        with:
+          access: public
+          provenance: true
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
