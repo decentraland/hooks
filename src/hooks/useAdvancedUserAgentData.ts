@@ -21,6 +21,7 @@ export type AdvancedNavigatorUAData = {
     architecture: string
   }
   mobile: boolean
+  tablet: boolean
 }
 
 /**
@@ -75,6 +76,7 @@ export function useAdvancedUserAgentData(): [
         architecture,
       },
       mobile: ua.getDevice().is("mobile"),
+      tablet: ua.getDevice().is("tablet"),
     })
 
     setLoading(false)
