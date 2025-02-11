@@ -59,6 +59,7 @@ describe("useAdvancedUserAgentData", () => {
       os: { name: "Windows", version: "10" },
       cpu: { architecture: "amd64" },
       mobile: false,
+      tablet: false,
     })
   })
 
@@ -125,6 +126,7 @@ describe("useAdvancedUserAgentData", () => {
       os: { name: "Unknown", version: "Unknown" },
       cpu: { architecture: "Unknown" },
       mobile: false,
+      tablet: false,
     })
   })
 
@@ -137,6 +139,7 @@ describe("useAdvancedUserAgentData", () => {
       os: { name: "Unknown", version: "Unknown" },
       cpu: { architecture: "Unknown" },
       mobile: false,
+      tablet: false,
     })
   })
 
@@ -173,7 +176,7 @@ describe("useAdvancedUserAgentData", () => {
     })
 
     mockUAParser.getDevice.mockReturnValue({
-      is: jest.fn().mockReturnValue(true),
+      is: jest.fn().mockImplementation((_type) => _type === "mobile"),
     })
 
     const { result } = renderHook(() => useAdvancedUserAgentData())
@@ -184,6 +187,7 @@ describe("useAdvancedUserAgentData", () => {
       os: { name: "Windows", version: "10.0" },
       cpu: { architecture: "amd64" },
       mobile: true,
+      tablet: false,
     })
   })
 
@@ -220,7 +224,7 @@ describe("useAdvancedUserAgentData", () => {
     })
 
     mockUAParser.getDevice.mockReturnValue({
-      is: jest.fn().mockReturnValue(true),
+      is: jest.fn().mockImplementation((_type) => _type === "mobile"),
     })
 
     const { result } = renderHook(() => useAdvancedUserAgentData())
@@ -231,6 +235,46 @@ describe("useAdvancedUserAgentData", () => {
       os: { name: "Windows", version: "10.0" },
       cpu: { architecture: "Unknown" },
       mobile: true,
+      tablet: false,
+    })
+  })
+
+  it("should detect tablet devices", async () => {
+    mockUAParser.getResult.mockReturnValue({
+      browser: { name: "Chrome", version: "100.0" },
+      engine: { name: "Blink", version: "100.0" },
+      withClientHints: jest.fn().mockResolvedValue({}),
+    })
+
+    mockUAParser.getOS.mockReturnValue({
+      withClientHints: jest.fn().mockResolvedValue({
+        name: "Android",
+        version: "12.0",
+      }),
+    })
+
+    mockUAParser.getCPU.mockReturnValue({
+      withClientHints: jest.fn().mockResolvedValue({
+        architecture: "arm64",
+      }),
+    })
+
+    mockUAParser.getDevice.mockReturnValue({
+      is: jest.fn().mockImplementation((_type) => _type === "tablet"),
+    })
+
+    const { result } = renderHook(() => useAdvancedUserAgentData())
+
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
+    expect(result.current[0]).toBe(false)
+    expect(result.current[1]).toEqual({
+      browser: { name: "Chrome", version: "100.0" },
+      engine: { name: "Blink", version: "100.0" },
+      os: { name: "Android", version: "12.0" },
+      cpu: { architecture: "arm64" },
+      mobile: false,
+      tablet: true,
     })
   })
 })
