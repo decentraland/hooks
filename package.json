@@ -64,7 +64,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/decentraland/hooks"
+    "url": "git+https://github.com/decentraland/hooks.git"
   },
   "bugs": {
     "url": "https://github.com/decentraland/hooks/issues"
