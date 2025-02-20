@@ -54,6 +54,8 @@
     "typescript-eslint": "^7.15.0"
   },
   "dependencies": {
+    "@dcl/schemas": "^16.0.0",
+    "@dcl/ui-env": "^1.5.1",
     "@sentry/browser": "^9.0.0",
     "ua-parser-js": "^2.0.2"
   },
