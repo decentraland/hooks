@@ -9,12 +9,10 @@ import type {
 
 const AnalyticsContext = createContext<AnalyticsContextType | null>(null)
 
-const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({
-  writeKey,
-  userId,
-  traits,
-  children,
-}: AnalyticsProviderProps) => {
+const AnalyticsProvider: React.FC<AnalyticsProviderProps> = (
+  props: AnalyticsProviderProps
+) => {
+  const { writeKey, userId, traits, children } = props
   const analyticsRef = useRef<AnalyticsBrowser | null>(null)
   const [isInitialized, setIsInitialized] = useState(false)
 
