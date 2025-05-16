@@ -1,6 +1,7 @@
-import React, { createContext, useEffect, useRef, useState } from "react"
+import React, { createContext, useRef, useState } from "react"
 import { type AnalyticsBrowser } from "@segment/analytics-next"
 import { isbot } from "isbot"
+import { useAsyncEffect } from "hooks/useAsyncEffect"
 import type {
   AnalyticsContextType,
   AnalyticsProviderProps,
@@ -16,41 +17,33 @@ const AnalyticsProvider: React.FC<AnalyticsProviderProps> = (
   const analyticsRef = useRef<AnalyticsBrowser | null>(null)
   const [isInitialized, setIsInitialized] = useState(false)
 
-  useEffect(() => {
-    const loadAnalytics = async () => {
-      if (!writeKey) {
-        console.log("[Analytics] No writeKey provided")
-        return
-      }
-
-      const userAgent = navigator.userAgent
-      const isBot = isbot(userAgent)
-
-      if (isBot) {
-        console.log("[Analytics] Skipping load: bot detected")
-        return
-      }
-
-      try {
-        // eslint-disable-next-line @typescript-eslint/naming-convention
-        const { AnalyticsBrowser } = await import("@segment/analytics-next")
-        analyticsRef.current = AnalyticsBrowser.load({ writeKey })
-
-        if (userId) {
-          analyticsRef.current.identify(userId, traits)
-        }
-
-        setIsInitialized(true)
-      } catch (error) {
-        console.error("[Analytics] Failed to initialize:", error)
-      }
+  useAsyncEffect(async () => {
+    if (!writeKey) {
+      console.log("[Analytics] No writeKey provided")
+      return
     }
 
-    loadAnalytics()
+    const userAgent = navigator.userAgent
+    const isBot = isbot(userAgent)
 
-    return () => {
+    if (isBot) {
+      console.log("[Analytics] Skipping load: bot detected")
+      return
+    }
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      const { AnalyticsBrowser } = await import("@segment/analytics-next")
+      analyticsRef.current = AnalyticsBrowser.load({ writeKey })
+
+      if (userId) {
+        analyticsRef.current.identify(userId, traits)
+      }
+
+      setIsInitialized(true)
+    } catch (error) {
+      console.error("[Analytics] Failed to initialize:", error)
       analyticsRef.current = null
-      setIsInitialized(false)
     }
   }, [writeKey, userId, traits])
 
