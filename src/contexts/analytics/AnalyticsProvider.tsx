@@ -1,4 +1,4 @@
-import React, { createContext, useRef, useState } from "react"
+import React, { createContext, useMemo, useRef, useState } from "react"
 import { type AnalyticsBrowser } from "@segment/analytics-next"
 import { isbot } from "isbot"
 import { useAsyncEffect } from "hooks/useAsyncEffect"
@@ -47,21 +47,24 @@ const AnalyticsProvider: React.FC<AnalyticsProviderProps> = (
     }
   }, [writeKey, userId, traits])
 
-  const contextValue =
-    analyticsRef.current && isInitialized
-      ? {
-          isInitialized: true as const,
-          track: (event: string, payload?: TrackPayload) => {
-            analyticsRef.current?.track(event, payload)
-          },
-          identify: (id: string, traits?: Record<string, unknown>) => {
-            analyticsRef.current?.identify(id, traits)
-          },
-          page: (name: string, props?: Record<string, unknown>) => {
-            analyticsRef.current?.page(name, props)
-          },
-        }
-      : { isInitialized: false as const }
+  const contextValue = useMemo(() => {
+    if (!analyticsRef.current || !isInitialized) {
+      return { isInitialized: false }
+    }
+
+    return {
+      isInitialized: true,
+      track: (event: string, payload?: TrackPayload) => {
+        analyticsRef.current?.track(event, payload)
+      },
+      identify: (id: string, traits?: Record<string, unknown>) => {
+        analyticsRef.current?.identify(id, traits)
+      },
+      page: (name: string, props?: Record<string, unknown>) => {
+        analyticsRef.current?.page(name, props)
+      },
+    }
+  }, [isInitialized])
 
   return (
     <AnalyticsContext.Provider value={contextValue}>
