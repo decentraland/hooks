@@ -14,7 +14,7 @@ const CONTENTFUL_CDN_URL = config.get("CONTENTFUL_CDN_URL")
 const SPACE_ID = config.get("CONTENTFUL_SPACE_ID")
 const ENVIRONMENT = config.get("CONTENTFUL_ENV")
 
-interface ContentfulAssetResponse {
+type ContentfulAssetResponse = {
   fields: {
     title: string
     description: string
@@ -27,7 +27,7 @@ interface ContentfulAssetResponse {
   sys: ContentfulAsset["sys"]
 }
 
-interface ContentfulEntryResponse<T extends LocalizedFields> {
+type ContentfulEntryResponse<T extends LocalizedFields> = {
   fields: T
   metadata?: {
     tags: string[]
@@ -43,7 +43,10 @@ const useGetContentful = <
   T extends Record<string, LocalizedField<LocalizedFieldType>>,
 >(
   id: string,
-  type: "assets" | "entries"
+  type: "assets" | "entries",
+  options?: {
+    includeAssets?: boolean
+  }
 ): {
   data: T | ContentfulAssetResponse | null
   assets: Record<string, ContentfulAsset>
@@ -78,14 +81,14 @@ const useGetContentful = <
       if (type === "entries") {
         const entryData = responseData as ContentfulEntryResponse<T>
         setData(entryData.fields as T)
-        const assetsMap = (entryData.includes?.Asset ?? []).reduce(
+        /* const assetsMap = (entryData.includes?.Asset ?? []).reduce(
           (acc: Record<string, ContentfulAsset>, asset: ContentfulAsset) => {
             acc[asset.sys.id] = asset
             return acc
           },
           {}
         )
-        setAssets(assetsMap)
+        setAssets(assetsMap) */
       } else {
         setData(responseData as ContentfulAssetResponse)
       }
@@ -106,4 +109,5 @@ const useGetContentful = <
   return { data, assets, isLoading, error }
 }
 
+export type { ContentfulAssetResponse, ContentfulEntryResponse }
 export { useGetContentful }

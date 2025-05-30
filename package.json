@@ -57,6 +57,7 @@
     "@dcl/schemas": "^16.0.0",
     "@dcl/ui-env": "^1.5.1",
     "@sentry/browser": "^9.0.0",
+    "radash": "^12.1.0",
     "ua-parser-js": "^2.0.2"
   },
   "keywords": [
