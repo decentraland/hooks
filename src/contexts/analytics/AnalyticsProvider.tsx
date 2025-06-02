@@ -1,7 +1,7 @@
 import React, { createContext, useMemo, useRef, useState } from "react"
 import { type AnalyticsBrowser } from "@segment/analytics-next"
 import { isbot } from "isbot"
-import { useAsyncEffect } from "hooks/useAsyncEffect"
+import { useAsyncEffect } from "../../hooks/useAsyncEffect"
 import type {
   AnalyticsContextType,
   AnalyticsProviderProps,
@@ -49,7 +49,12 @@ const AnalyticsProvider: React.FC<AnalyticsProviderProps> = (
 
   const contextValue = useMemo(() => {
     if (!analyticsRef.current || !isInitialized) {
-      return { isInitialized: false }
+      return {
+        isInitialized: false,
+        track: () => {},
+        identify: () => {},
+        page: () => {},
+      }
     }
 
     return {

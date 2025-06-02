@@ -2,7 +2,7 @@ import { useEffect } from "react"
 import { useLocation } from "react-router"
 import { useAnalytics } from "./useAnalytics"
 
-export function usePageTracking() {
+const usePageTracking = () => {
   const location = useLocation()
   const { page } = useAnalytics()
 
@@ -10,3 +10,5 @@ export function usePageTracking() {
     page(location.pathname)
   }, [location, page])
 }
+
+export { usePageTracking }
