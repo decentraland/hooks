@@ -19,7 +19,6 @@ npm install @dcl/hooks
 - `usePatchState`: Partial state updates for complex objects
 - `useAsyncEffect`: Async version of useEffect
 - `useAsyncMemo`: Async version of useMemo
-- `useShare`: Hook for sharing content using the Web Share API
 
 ## Examples
 
@@ -67,37 +66,6 @@ function BrowserInfo() {
 }
 ```
 
-### useShare
-
-```typescript
-import { useShare } from '@dcl/hooks'
-
-function ShareButton() {
-  const [share, shareState] = useShare()
-
-  const handleShare = async () => {
-    await share({
-      title: 'My Decentraland Experience',
-      text: 'Check out what I found in Decentraland!',
-      url: 'https://play.decentraland.org',
-      thumbnail: 'https://example.com/thumbnail.jpg' // optional
-    })
-  }
-
-  if (!shareState.isSupported) {
-    return <div>Sharing is not supported in this browser</div>
-  }
-
-  return (
-    <div>
-      <button onClick={handleShare} disabled={shareState.isSharing}>
-        {shareState.isSharing ? 'Sharing...' : 'Share'}
-      </button>
-      {shareState.error && <div>Error: {shareState.error.message}</div>}
-    </div>
-  )
-}
-```
 
 ## License
 
