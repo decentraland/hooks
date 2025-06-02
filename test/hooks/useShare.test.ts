@@ -4,7 +4,7 @@
  */
 
 import { act, renderHook } from "@testing-library/react"
-import { useShare } from "../../src/hooks/useShare"
+import { isShareSupported, useShare } from "../../src/hooks/useShare"
 
 describe("useShare", () => {
   const mockShareData = {
@@ -29,13 +29,34 @@ describe("useShare", () => {
     consoleErrorSpy.mockRestore()
   })
 
+  describe("isShareSupported", () => {
+    it("should be false when navigator is undefined", () => {
+      expect(isShareSupported()).toBe(false)
+    })
+
+    it("should be false when navigator.share is undefined", () => {
+      Object.defineProperty(global, "navigator", {
+        value: {},
+        writable: true,
+      })
+      expect(isShareSupported()).toBe(false)
+    })
+
+    it("should be true when navigator.share is available", () => {
+      Object.defineProperty(global, "navigator", {
+        value: { share: jest.fn() },
+        writable: true,
+      })
+      expect(isShareSupported()).toBe(true)
+    })
+  })
+
   describe("when initializing the hook", () => {
     it("should return initial state when Web Share API is not supported", () => {
       const { result } = renderHook(() => useShare())
       const [, state] = result.current
 
       expect(state).toEqual({
-        data: null,
         isSupported: false,
         isSharing: false,
         error: null,
@@ -53,7 +74,6 @@ describe("useShare", () => {
       const [, state] = result.current
 
       expect(state).toEqual({
-        data: null,
         isSupported: true,
         isSharing: false,
         error: null,
@@ -64,7 +84,7 @@ describe("useShare", () => {
 
   describe("when sharing content", () => {
     describe("when Web Share API is not supported", () => {
-      it("should update state with share data without calling navigator.share", async () => {
+      it("should not call navigator.share and return early", async () => {
         const { result } = renderHook(() => useShare())
         const [share] = result.current
 
@@ -73,7 +93,6 @@ describe("useShare", () => {
         })
 
         const [, state] = result.current
-        expect(state.data).toEqual(mockShareData)
         expect(state.isSharing).toBe(false)
         expect(state.error).toBe(null)
       })
@@ -98,7 +117,6 @@ describe("useShare", () => {
         expect(mockShare).toHaveBeenCalledTimes(1)
 
         const [, state] = result.current
-        expect(state.data).toBe(null)
         expect(state.isSharing).toBe(false)
         expect(state.error).toBe(null)
       })
@@ -127,18 +145,24 @@ describe("useShare", () => {
 
         const [, state] = result.current
         expect(state.error).toEqual(mockError)
-        expect(state.data).toEqual(mockShareData)
         expect(state.isSharing).toBe(false)
       })
     })
   })
 
   describe("when closing share dialog", () => {
-    it("should clear share data and error state", async () => {
+    it("should clear error state", async () => {
+      const mockError = new Error("Test error")
+      const mockShare = jest.fn().mockRejectedValue(mockError)
+      Object.defineProperty(global, "navigator", {
+        value: { share: mockShare },
+        writable: true,
+      })
+
       const { result } = renderHook(() => useShare())
       const [share, state] = result.current
 
-      // Primero compartimos para tener datos
+      // Primero compartimos para tener un error
       await act(async () => {
         await share(mockShareData)
       })
@@ -149,7 +173,6 @@ describe("useShare", () => {
       })
 
       const [, newState] = result.current
-      expect(newState.data).toBe(null)
       expect(newState.error).toBe(null)
     })
   })

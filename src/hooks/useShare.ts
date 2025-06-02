@@ -4,52 +4,47 @@ type DCLShareData = ShareData & {
   thumbnail?: string
 }
 
+const checkShareSupport = () =>
+  typeof navigator !== "undefined" && !!navigator.share
+
 type ShareState = {
-  data: DCLShareData | null
-  isSupported: boolean
   isSharing: boolean
   error: Error | null
 }
 
 const useShare = () => {
   const [state, setState] = useState<ShareState>({
-    data: null,
-    isSupported: typeof navigator !== "undefined" && !!navigator.share,
     isSharing: false,
     error: null,
   })
 
-  const share = useCallback(
-    async (shareData: DCLShareData) => {
-      if (!state.isSupported) {
-        setState((prev) => ({ ...prev, data: shareData }))
-        return
-      }
+  const share = useCallback(async (shareData: DCLShareData) => {
+    if (!checkShareSupport()) {
+      return
+    }
 
-      try {
-        setState((prev) => ({ ...prev, isSharing: true, error: null }))
-        await navigator.share(shareData)
-        setState((prev) => ({ ...prev, isSharing: false, data: null }))
-      } catch (error) {
-        setState((prev) => ({
-          ...prev,
-          isSharing: false,
-          error:
-            error instanceof Error ? error : new Error("Error al compartir"),
-          data: shareData,
-        }))
-      }
-    },
-    [state.isSupported]
-  )
+    try {
+      setState((prev) => ({ ...prev, isSharing: true, error: null }))
+      await navigator.share(shareData)
+      setState((prev) => ({ ...prev, isSharing: false }))
+    } catch (error) {
+      setState((prev) => ({
+        ...prev,
+        isSharing: false,
+        error:
+          error instanceof Error ? error : new Error("Error sharing content"),
+      }))
+    }
+  }, [])
 
   const close = useCallback(() => {
-    setState((prev) => ({ ...prev, data: null, error: null }))
+    setState((prev) => ({ ...prev, error: null }))
   }, [])
 
   const shareState = useMemo(
     () => ({
       ...state,
+      isSupported: checkShareSupport(),
       close,
     }),
     [state, close]
@@ -58,5 +53,5 @@ const useShare = () => {
   return [share, shareState] as const
 }
 
-export { useShare }
+export { useShare, checkShareSupport as isShareSupported }
 export type { DCLShareData, ShareState }
