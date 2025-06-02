@@ -9,20 +9,12 @@ type AnalyticsProviderProps = {
 
 type TrackPayload = EventProperties
 
-type UninitializedAnalyticsContext = {
-  isInitialized: boolean
-}
-
-type InitializedAnalyticsContext = {
+type AnalyticsContextType = {
   isInitialized: boolean
   track: (event: string, payload?: TrackPayload) => void
   identify: (userId: string, traits?: Record<string, unknown>) => void
   page: (name: string, props?: Record<string, unknown>) => void
 }
-
-type AnalyticsContextType =
-  | UninitializedAnalyticsContext
-  | InitializedAnalyticsContext
 
 export {
   type AnalyticsProviderProps,

@@ -1,27 +1,27 @@
 import { useContext } from "react"
 import { AnalyticsContext } from "../contexts/analytics/AnalyticsProvider"
+import type { AnalyticsContextType } from "../contexts/analytics/types"
 
-const useAnalytics = () => {
+const useAnalytics = (): AnalyticsContextType => {
   const analyticsContext = useContext(AnalyticsContext)
   if (!analyticsContext) {
     throw new Error("useAnalytics must be used within AnalyticsProvider")
   }
 
-  // Return no-op functions if analytics is not initialized
   if (!analyticsContext.isInitialized) {
     return {
+      isInitialized: false,
       track: () => {},
       identify: () => {},
       page: () => {},
-      isInitialized: false,
     }
   }
 
   return {
+    isInitialized: true,
     track: analyticsContext.track,
     identify: analyticsContext.identify,
     page: analyticsContext.page,
-    isInitialized: true,
   }
 }
 
