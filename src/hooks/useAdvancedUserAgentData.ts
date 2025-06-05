@@ -39,7 +39,7 @@ export function useAdvancedUserAgentData(): [
     setLoading(true)
     const ua = new UAParser(navigator.userAgent)
     const uaData = ua.getResult()
-    const uaDataWithClientHints = await uaData.withClientHints()
+
     const browser = {
       name: uaData.browser.name ?? DEFAULT_VALUE,
       version: uaData.browser.version ?? DEFAULT_VALUE,
@@ -48,7 +48,8 @@ export function useAdvancedUserAgentData(): [
       name: uaData.engine.name ?? DEFAULT_VALUE,
       version: uaData.engine.version ?? DEFAULT_VALUE,
     }
-    const [osData, cpuData] = await Promise.all([
+    const [uaDataWithClientHints, osData, cpuData] = await Promise.all([
+      uaData.withClientHints(),
       ua.getOS().withClientHints(),
       ua.getCPU().withClientHints(),
     ])
