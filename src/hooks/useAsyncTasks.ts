@@ -2,7 +2,7 @@
 import { DependencyList, useCallback, useMemo, useState } from "react"
 import { sentry } from "../utils/development/sentry"
 
-type AsyncTaskIdenfity = (id: string, ...extra: any[]) => Promise<any>
+type AsyncTaskIdentity = (id: string, ...extra: any[]) => Promise<any>
 
 /**
  * Use async tasks to execute async functions and return a list of task ids and a function to add a task
@@ -10,7 +10,7 @@ type AsyncTaskIdenfity = (id: string, ...extra: any[]) => Promise<any>
  * @param deps - The dependencies of the async function
  * @returns A tuple containing the list of task ids and a function to add a task
  */
-const useAsyncTasks = <C extends AsyncTaskIdenfity = AsyncTaskIdenfity>(
+const useAsyncTasks = <C extends AsyncTaskIdentity = AsyncTaskIdentity>(
   callback: C,
   deps: DependencyList
 ): readonly [string[], C] => {
@@ -46,5 +46,5 @@ const useAsyncTasks = <C extends AsyncTaskIdenfity = AsyncTaskIdenfity>(
   return [tasksIds, addTask as C] as const
 }
 
-export type { AsyncTaskIdenfity }
+export type { AsyncTaskIdentity }
 export { useAsyncTasks }
