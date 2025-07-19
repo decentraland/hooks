@@ -55,6 +55,8 @@
   },
   "dependencies": {
     "@sentry/browser": "^9.0.0",
+    "@types/segment-analytics": "^0.0.38",
+    "isbot": "^5.1.28",
     "ua-parser-js": "^2.0.2"
   },
   "keywords": [
@@ -73,6 +75,11 @@
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "jsdom",
+    "testEnvironmentOptions": {
+      "url": "http://localhost",
+      "pretendToBeVisual": true,
+      "resources": "usable"
+    },
     "moduleNameMapper": {
       "^test/(.*)$": "<rootDir>/test/$1",
       "^src/(.*)$": "<rootDir>/src/$1"
