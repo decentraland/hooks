@@ -1,6 +1,12 @@
 // Types
 export type { AsyncStateResult, AsyncStateResultState } from "./useAsyncState"
 export type { AsyncMemoResult, AsyncMemoResultState } from "./useAsyncMemo"
+export type { AdvancedNavigatorUAData } from "./useAdvancedUserAgentData"
+export type {
+  TrackingOptions,
+  TrackingContext,
+  TrackingHook,
+} from "./useTracking"
 
 // Hooks
 export { useAdvancedUserAgentData } from "./useAdvancedUserAgentData"
@@ -10,3 +16,4 @@ export { useAsyncTasks } from "./useAsyncTasks"
 export { usePatchState } from "./usePatchState"
 export { useAsyncEffect } from "./useAsyncEffect"
 export { useAsyncMemo, createAsyncMemoState } from "./useAsyncMemo"
+export { useTracking } from "./useTracking"
