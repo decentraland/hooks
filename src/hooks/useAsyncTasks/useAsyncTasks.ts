@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { DependencyList, useCallback, useMemo, useState } from "react"
-import { sentry } from "../utils/development/sentry"
-
-type AsyncTaskIdentity = (id: string, ...extra: any[]) => Promise<any>
+import { AsyncTaskIdentity } from "./useAsyncTasks.type"
+import { sentry } from "../../utils/development/sentry"
 
 /**
  * Use async tasks to execute async functions and return a list of task ids and a function to add a task
@@ -46,5 +45,4 @@ const useAsyncTasks = <C extends AsyncTaskIdentity = AsyncTaskIdentity>(
   return [tasksIds, addTask as C] as const
 }
 
-export type { AsyncTaskIdentity }
 export { useAsyncTasks }
