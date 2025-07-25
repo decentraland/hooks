@@ -1,11 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { DependencyList, useCallback, useEffect, useState } from "react"
-import { sentry } from "../utils/development/sentry"
-
-type AsyncTaskState<A extends any[] = []> = {
-  loading: boolean
-  args: A | null
-}
+import { AsyncTaskState } from "./useAsyncTask.type"
+import { sentry } from "../../utils/development/sentry"
 
 /**
  * Execute an async function and return a loading state and a function to call the async function

@@ -5,36 +5,13 @@ import {
   useMemo,
   useState,
 } from "react"
-import { sentry } from "../utils/development/sentry"
-
-type AsyncStateState<T, I = null> = {
-  version: number
-  loading: boolean
-  value: T | I
-  time: number
-  error: Error | null
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AsyncStateOptions<T = any, I = null> = {
-  initialValue: T | I
-  callWithTruthyDeps: boolean
-}
-
-type AsyncStateResultState<T, I = null> = {
-  version: number
-  time: number
-  error: Error | null
-  loading: boolean
-  loaded: boolean
-  reload: () => void
-  set: (value: ((current: T | I) => T) | T) => void
-}
-
-type AsyncStateResult<T, I = null> = readonly [
-  T | I,
-  AsyncStateResultState<T, I>,
-]
+import {
+  AsyncStateOptions,
+  AsyncStateResult,
+  AsyncStateResultState,
+  AsyncStateState,
+} from "./useAsyncState.type"
+import { sentry } from "../../utils/development/sentry"
 
 /**
  * Create a state object for the useAsyncState hook

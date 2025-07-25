@@ -1,28 +1,9 @@
 import { useState } from "react"
 import { UAParser } from "ua-parser-js"
 import { isAppleSilicon } from "ua-parser-js/helpers"
-import { useAsyncEffect } from "./useAsyncEffect"
+import { AdvancedNavigatorUAData } from "./useAdvancedUserAgentData.type"
+import { useAsyncEffect } from "../useAsyncEffect"
 const DEFAULT_VALUE = "Unknown"
-
-export type AdvancedNavigatorUAData = {
-  browser: {
-    name: string
-    version: string
-  }
-  engine: {
-    name: string
-    version: string
-  }
-  os: {
-    name: string
-    version: string
-  }
-  cpu: {
-    architecture: string
-  }
-  mobile: boolean
-  tablet: boolean
-}
 
 /**
  * extract or infer the [UserAgentData](https://developer.mozilla.org/en-US/docs/Web/API/Navigator/userAgentData)
