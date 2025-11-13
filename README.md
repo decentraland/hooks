@@ -16,6 +16,7 @@ npm install @dcl/hooks
 - `useAsyncState`: Async state management with dependencies
 - `useAsyncTask`: Single async task management
 - `useAsyncTasks`: Multiple async tasks management
+- `useBackgroundDownload`: Background file download with progress tracking and cache support
 - `usePatchState`: Partial state updates for complex objects
 - `useAsyncEffect`: Async version of useEffect
 - `useAsyncMemo`: Async version of useMemo
@@ -61,6 +62,69 @@ function BrowserInfo() {
         <li>CPU Architecture: {data?.cpu.architecture}</li>
         <li>Mobile Device: {data?.mobile ? 'Yes' : 'No'}</li>
       </ul>
+    </div>
+  )
+}
+```
+
+### useBackgroundDownload
+
+```typescript
+import { useBackgroundDownload } from '@dcl/hooks'
+
+function DownloadButton() {
+  const { state, progress, start, save, abort, clearCache } = useBackgroundDownload({
+    urls: {
+      mac: 'https://decentraland.org/explorer/launcher.dmg',
+      win: 'https://decentraland.org/explorer/launcher.exe'
+    },
+    cacheKey: 'decentraland-launcher',
+    cacheTTL: 24 * 60 * 60 * 1000, // 24 hours
+    onProgress: (progress, loaded, total) => {
+      console.log(`Downloaded: ${progress.toFixed(2)}% (${loaded}/${total} bytes)`)
+    },
+    onDone: (blob) => {
+      console.log('Download complete!', blob.size, 'bytes')
+    },
+    onError: (error) => {
+      console.error('Download failed:', error)
+    }
+  })
+
+  const handleDownload = async () => {
+    await start()
+  }
+
+  const handleSave = () => {
+    if (state === 'finished') {
+      save('decentraland-launcher.dmg')
+    }
+  }
+
+  return (
+    <div>
+      {state === 'downloading' && (
+        <div>
+          <p>Downloading... {progress.toFixed(2)}%</p>
+          <button onClick={abort}>Cancel</button>
+        </div>
+      )}
+      {state === 'finished' && (
+        <div>
+          <p>Download complete!</p>
+          <button onClick={handleSave}>Save File</button>
+          <button onClick={clearCache}>Clear Cache</button>
+        </div>
+      )}
+      {state === 'idle' && (
+        <button onClick={handleDownload}>Download</button>
+      )}
+      {state === 'error' && (
+        <div>
+          <p>Error occurred</p>
+          <button onClick={handleDownload}>Retry</button>
+        </div>
+      )}
     </div>
   )
 }
