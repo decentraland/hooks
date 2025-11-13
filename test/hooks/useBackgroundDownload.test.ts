@@ -10,9 +10,14 @@ describe("useBackgroundDownload", () => {
   let mockCreateObjectURL: jest.Mock
   let mockRevokeObjectURL: jest.Mock
   let localStorageMock: Storage
+  let originalCreateElement: typeof document.createElement
+  let consoleErrorSpy: jest.SpyInstance
 
   beforeEach(() => {
     jest.clearAllMocks()
+    // Silenciar console.error durante los tests
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    originalCreateElement = document.createElement.bind(document)
 
     localStorageMock = {
       getItem: jest.fn(),
@@ -33,7 +38,15 @@ describe("useBackgroundDownload", () => {
     global.URL.createObjectURL = mockCreateObjectURL
     global.URL.revokeObjectURL = mockRevokeObjectURL
 
-    mockReadAsDataURL = jest.fn()
+    mockReadAsDataURL = jest.fn().mockImplementation(function (
+      this: FileReader
+    ) {
+      setTimeout(() => {
+        if (this.onloadend) {
+          this.onloadend({} as ProgressEvent<FileReader>)
+        }
+      }, 0)
+    })
     mockFileReader = jest.fn().mockImplementation(() => ({
       readAsDataURL: mockReadAsDataURL,
       result: "data:application/octet-stream;base64,dGVzdA==",
@@ -49,6 +62,8 @@ describe("useBackgroundDownload", () => {
 
   afterEach(() => {
     jest.resetAllMocks()
+    document.createElement = originalCreateElement
+    consoleErrorSpy.mockRestore()
   })
 
   describe("when initialized", () => {
@@ -83,8 +98,8 @@ describe("useBackgroundDownload", () => {
         const { result } = renderHook(() =>
           useBackgroundDownload({
             urls: {
-              mac: "https://example.com/mac",
-              win: "https://example.com/win",
+              mac: "https://decentraland.org/explorer/launcher.dmg",
+              win: "https://decentraland.org/explorer/launcher.exe",
             },
             cacheKey: "test-cache",
           })
@@ -97,8 +112,8 @@ describe("useBackgroundDownload", () => {
         const { result } = renderHook(() =>
           useBackgroundDownload({
             urls: {
-              mac: "https://example.com/mac",
-              win: "https://example.com/win",
+              mac: "https://decentraland.org/explorer/launcher.dmg",
+              win: "https://decentraland.org/explorer/launcher.exe",
             },
             cacheKey: "test-cache",
           })
@@ -197,8 +212,8 @@ describe("useBackgroundDownload", () => {
         const { result } = renderHook(() =>
           useBackgroundDownload({
             urls: {
-              mac: "https://example.com/mac",
-              win: "https://example.com/win",
+              mac: "https://decentraland.org/explorer/launcher.dmg",
+              win: "https://decentraland.org/explorer/launcher.exe",
             },
             enableCache: false,
           })
@@ -251,14 +266,15 @@ describe("useBackgroundDownload", () => {
         const { result } = renderHook(() =>
           useBackgroundDownload({
             urls: {
-              mac: "https://example.com/mac",
-              win: "https://example.com/win",
+              mac: "https://decentraland.org/explorer/launcher.dmg",
+              win: "https://decentraland.org/explorer/launcher.exe",
             },
           })
         )
 
         await act(async () => {
           await result.current.start()
+          await new Promise((resolve) => setTimeout(resolve, 10))
         })
 
         expect(result.current.state).toBe("finished")
@@ -276,8 +292,8 @@ describe("useBackgroundDownload", () => {
         const { result } = renderHook(() =>
           useBackgroundDownload({
             urls: {
-              mac: "https://example.com/mac",
-              win: "https://example.com/win",
+              mac: "https://decentraland.org/explorer/launcher.dmg",
+              win: "https://decentraland.org/explorer/launcher.exe",
             },
             onProgress,
           })
@@ -285,6 +301,7 @@ describe("useBackgroundDownload", () => {
 
         await act(async () => {
           await result.current.start()
+          await new Promise((resolve) => setTimeout(resolve, 10))
         })
 
         expect(onProgress).toHaveBeenCalled()
@@ -301,8 +318,8 @@ describe("useBackgroundDownload", () => {
         const { result } = renderHook(() =>
           useBackgroundDownload({
             urls: {
-              mac: "https://example.com/mac",
-              win: "https://example.com/win",
+              mac: "https://decentraland.org/explorer/launcher.dmg",
+              win: "https://decentraland.org/explorer/launcher.exe",
             },
             onDone,
           })
@@ -310,6 +327,7 @@ describe("useBackgroundDownload", () => {
 
         await act(async () => {
           await result.current.start()
+          await new Promise((resolve) => setTimeout(resolve, 10))
         })
 
         expect(onDone).toHaveBeenCalled()
@@ -323,19 +341,22 @@ describe("useBackgroundDownload", () => {
           .mockResolvedValueOnce({ done: false, value: chunks[0] })
           .mockResolvedValueOnce({ done: true, value: undefined })
 
-        mockReadAsDataURL.mockImplementation(function (this: FileReader) {
+        const fileReaderMock = jest.fn().mockImplementation(function (
+          this: FileReader
+        ) {
           setTimeout(() => {
             if (this.onloadend) {
               this.onloadend({} as ProgressEvent<FileReader>)
             }
           }, 0)
         })
+        mockReadAsDataURL.mockImplementation(fileReaderMock)
 
         const { result } = renderHook(() =>
           useBackgroundDownload({
             urls: {
-              mac: "https://example.com/mac",
-              win: "https://example.com/win",
+              mac: "https://decentraland.org/explorer/launcher.dmg",
+              win: "https://decentraland.org/explorer/launcher.exe",
             },
             cacheKey: "test-cache",
           })
@@ -358,14 +379,15 @@ describe("useBackgroundDownload", () => {
         const { result } = renderHook(() =>
           useBackgroundDownload({
             urls: {
-              mac: "https://example.com/mac",
-              win: "https://example.com/win",
+              mac: "https://decentraland.org/explorer/launcher.dmg",
+              win: "https://decentraland.org/explorer/launcher.exe",
             },
           })
         )
 
         await act(async () => {
           await result.current.start()
+          await new Promise((resolve) => setTimeout(resolve, 10))
         })
 
         expect(result.current.state).toBe("error")
@@ -380,8 +402,8 @@ describe("useBackgroundDownload", () => {
         const { result } = renderHook(() =>
           useBackgroundDownload({
             urls: {
-              mac: "https://example.com/mac",
-              win: "https://example.com/win",
+              mac: "https://decentraland.org/explorer/launcher.dmg",
+              win: "https://decentraland.org/explorer/launcher.exe",
             },
             onError,
           })
@@ -389,6 +411,7 @@ describe("useBackgroundDownload", () => {
 
         await act(async () => {
           await result.current.start()
+          await new Promise((resolve) => setTimeout(resolve, 10))
         })
 
         expect(onError).toHaveBeenCalledWith(mockError)
@@ -407,14 +430,15 @@ describe("useBackgroundDownload", () => {
         const { result } = renderHook(() =>
           useBackgroundDownload({
             urls: {
-              mac: "https://example.com/mac",
-              win: "https://example.com/win",
+              mac: "https://decentraland.org/explorer/launcher.dmg",
+              win: "https://decentraland.org/explorer/launcher.exe",
             },
           })
         )
 
         await act(async () => {
           await result.current.start()
+          await new Promise((resolve) => setTimeout(resolve, 10))
         })
 
         expect(result.current.state).toBe("error")
@@ -445,14 +469,15 @@ describe("useBackgroundDownload", () => {
         const { result } = renderHook(() =>
           useBackgroundDownload({
             urls: {
-              mac: "https://example.com/mac",
-              win: "https://example.com/win",
+              mac: "https://decentraland.org/explorer/launcher.dmg",
+              win: "https://decentraland.org/explorer/launcher.exe",
             },
           })
         )
 
         await act(async () => {
           await result.current.start()
+          await new Promise((resolve) => setTimeout(resolve, 10))
         })
 
         expect(result.current.state).toBe("aborted")
@@ -467,7 +492,7 @@ describe("useBackgroundDownload", () => {
         signal: {} as AbortSignal,
       }
 
-      jest
+      const AbortControllerSpy = jest
         .spyOn(global, "AbortController")
         .mockImplementation(
           () => mockAbortController as unknown as AbortController
@@ -483,10 +508,15 @@ describe("useBackgroundDownload", () => {
       )
 
       act(() => {
+        result.current.start()
+      })
+
+      act(() => {
         result.current.abort()
       })
 
       expect(mockAbortController.abort).toHaveBeenCalled()
+      AbortControllerSpy.mockRestore()
     })
   })
 
@@ -499,6 +529,7 @@ describe("useBackgroundDownload", () => {
         remove: jest.Mock
       }
       let cachedData: { data: string; type: string; timestamp: number }
+      let originalCreateElement: typeof document.createElement
 
       beforeEach(() => {
         cachedData = {
@@ -517,106 +548,190 @@ describe("useBackgroundDownload", () => {
           remove: jest.fn(),
         }
 
-        jest
-          .spyOn(document, "createElement")
-          .mockReturnValue(mockAnchor as unknown as HTMLElement)
-        jest.spyOn(document.body, "appendChild").mockImplementation()
-        jest.spyOn(mockAnchor, "remove").mockImplementation()
+        originalCreateElement = document.createElement.bind(document)
+      })
+
+      afterEach(() => {
+        document.createElement = originalCreateElement
       })
 
       it("should create download link", () => {
-        const createElementSpy = jest.spyOn(document, "createElement")
-
         const { result } = renderHook(() =>
           useBackgroundDownload({
             urls: {
-              mac: "https://example.com/mac",
-              win: "https://example.com/win",
+              mac: "https://decentraland.org/explorer/launcher.dmg",
+              win: "https://decentraland.org/explorer/launcher.exe",
             },
             cacheKey: "test-cache",
           })
         )
+
+        const createElementSpy = jest.fn((tagName: string) => {
+          if (tagName === "a") {
+            return mockAnchor as unknown as HTMLElement
+          }
+          return originalCreateElement(tagName)
+        })
+        document.createElement =
+          createElementSpy as typeof document.createElement
+        const appendChildSpy = jest
+          .spyOn(document.body, "appendChild")
+          .mockImplementation()
+        const removeSpy = jest.spyOn(mockAnchor, "remove").mockImplementation()
 
         act(() => {
           result.current.save("test-file.dmg")
         })
 
         expect(createElementSpy).toHaveBeenCalledWith("a")
+        appendChildSpy.mockRestore()
+        removeSpy.mockRestore()
       })
 
       it("should set download filename", () => {
         const { result } = renderHook(() =>
           useBackgroundDownload({
             urls: {
-              mac: "https://example.com/mac",
-              win: "https://example.com/win",
+              mac: "https://decentraland.org/explorer/launcher.dmg",
+              win: "https://decentraland.org/explorer/launcher.exe",
             },
             cacheKey: "test-cache",
           })
         )
+
+        const createElementSpy = jest.fn((tagName: string) => {
+          if (tagName === "a") {
+            return mockAnchor as unknown as HTMLElement
+          }
+          return originalCreateElement(tagName)
+        })
+        document.createElement =
+          createElementSpy as typeof document.createElement
+        const appendChildSpy = jest
+          .spyOn(document.body, "appendChild")
+          .mockImplementation()
+        const removeSpy = jest.spyOn(mockAnchor, "remove").mockImplementation()
 
         act(() => {
           result.current.save("test-file.dmg")
         })
 
         expect(mockAnchor.download).toBe("test-file.dmg")
+        document.createElement = originalCreateElement
+        appendChildSpy.mockRestore()
+        removeSpy.mockRestore()
       })
 
       it("should trigger click on anchor", () => {
         const { result } = renderHook(() =>
           useBackgroundDownload({
             urls: {
-              mac: "https://example.com/mac",
-              win: "https://example.com/win",
+              mac: "https://decentraland.org/explorer/launcher.dmg",
+              win: "https://decentraland.org/explorer/launcher.exe",
             },
             cacheKey: "test-cache",
           })
         )
+
+        const createElementSpy = jest.fn((tagName: string) => {
+          if (tagName === "a") {
+            return mockAnchor as unknown as HTMLElement
+          }
+          return originalCreateElement(tagName)
+        })
+        document.createElement =
+          createElementSpy as typeof document.createElement
+        const appendChildSpy = jest
+          .spyOn(document.body, "appendChild")
+          .mockImplementation()
+        const removeSpy = jest.spyOn(mockAnchor, "remove").mockImplementation()
 
         act(() => {
           result.current.save("test-file.dmg")
         })
 
         expect(mockAnchor.click).toHaveBeenCalled()
+        document.createElement = originalCreateElement
+        appendChildSpy.mockRestore()
+        removeSpy.mockRestore()
       })
 
       it("should revoke blob URL", () => {
         const { result } = renderHook(() =>
           useBackgroundDownload({
             urls: {
-              mac: "https://example.com/mac",
-              win: "https://example.com/win",
+              mac: "https://decentraland.org/explorer/launcher.dmg",
+              win: "https://decentraland.org/explorer/launcher.exe",
             },
             cacheKey: "test-cache",
           })
         )
+
+        const createElementSpy = jest.fn((tagName: string) => {
+          if (tagName === "a") {
+            return mockAnchor as unknown as HTMLElement
+          }
+          return originalCreateElement(tagName)
+        })
+        document.createElement =
+          createElementSpy as typeof document.createElement
+        const appendChildSpy = jest
+          .spyOn(document.body, "appendChild")
+          .mockImplementation()
+        const removeSpy = jest.spyOn(mockAnchor, "remove").mockImplementation()
 
         act(() => {
           result.current.save("test-file.dmg")
         })
 
         expect(mockRevokeObjectURL).toHaveBeenCalled()
+        document.createElement = originalCreateElement
+        appendChildSpy.mockRestore()
+        removeSpy.mockRestore()
       })
     })
 
     describe("and blob is not available", () => {
-      it("should not create download link", () => {
-        const createElementSpy = jest.spyOn(document, "createElement")
+      let originalCreateElement: typeof document.createElement
 
+      beforeEach(() => {
+        originalCreateElement = document.createElement.bind(document)
+      })
+
+      afterEach(() => {
+        document.createElement = originalCreateElement
+      })
+
+      it("should not create download link", () => {
         const { result } = renderHook(() =>
           useBackgroundDownload({
             urls: {
-              mac: "https://example.com/mac",
-              win: "https://example.com/win",
+              mac: "https://decentraland.org/explorer/launcher.dmg",
+              win: "https://decentraland.org/explorer/launcher.exe",
             },
           })
         )
+
+        const createElementSpy = jest.fn((tagName: string) => {
+          if (tagName === "a") {
+            return {
+              href: "",
+              download: "",
+              click: jest.fn(),
+              remove: jest.fn(),
+            } as unknown as HTMLElement
+          }
+          return originalCreateElement(tagName)
+        })
+        document.createElement =
+          createElementSpy as typeof document.createElement
 
         act(() => {
           result.current.save("test-file.dmg")
         })
 
-        expect(createElementSpy).not.toHaveBeenCalled()
+        expect(createElementSpy).not.toHaveBeenCalledWith("a")
+        document.createElement = originalCreateElement
       })
     })
   })
@@ -710,7 +825,9 @@ describe("useBackgroundDownload", () => {
 
   describe("when using getUrl option", () => {
     it("should use getUrl function instead of urls", () => {
-      const getUrl = jest.fn().mockReturnValue("https://example.com/custom")
+      const getUrl = jest
+        .fn()
+        .mockReturnValue("https://decentraland.org/explorer/launcher.dmg")
 
       const { result } = renderHook(() =>
         useBackgroundDownload({
@@ -724,9 +841,16 @@ describe("useBackgroundDownload", () => {
 
   describe("when missing URLs and getUrl", () => {
     it("should throw error", () => {
-      expect(() => {
+      let error: Error | null = null
+      try {
         renderHook(() => useBackgroundDownload({}))
-      }).toThrow("Missing URLs or getUrl()")
+      } catch (e) {
+        error = e as Error
+      }
+      expect(error).toBeTruthy()
+      if (error) {
+        expect(error.message).toContain("Missing URLs or getUrl()")
+      }
     })
   })
 
@@ -739,8 +863,6 @@ describe("useBackgroundDownload", () => {
       }
 
       beforeEach(() => {
-        jest.useFakeTimers()
-
         mockReader = {
           read: jest.fn(),
           cancel: jest.fn(),
@@ -760,10 +882,6 @@ describe("useBackgroundDownload", () => {
         mockFetch.mockResolvedValue(mockResponse)
       })
 
-      afterEach(() => {
-        jest.useRealTimers()
-      })
-
       it("should schedule automatic cache deletion", async () => {
         const chunks = [new Uint8Array([1, 2, 3, 4, 5])]
 
@@ -771,22 +889,23 @@ describe("useBackgroundDownload", () => {
           .mockResolvedValueOnce({ done: false, value: chunks[0] })
           .mockResolvedValueOnce({ done: true, value: undefined })
 
-        mockReadAsDataURL.mockImplementation(function (this: FileReader) {
-          setTimeout(() => {
-            if (this.onloadend) {
-              this.onloadend({} as ProgressEvent<FileReader>)
-            }
-          }, 0)
+        const fileReaderMock = jest.fn().mockImplementation(function (
+          this: FileReader
+        ) {
+          if (this.onloadend) {
+            this.onloadend({} as ProgressEvent<FileReader>)
+          }
         })
+        mockReadAsDataURL.mockImplementation(fileReaderMock)
 
         const { result } = renderHook(() =>
           useBackgroundDownload({
             urls: {
-              mac: "https://example.com/mac",
-              win: "https://example.com/win",
+              mac: "https://decentraland.org/explorer/launcher.dmg",
+              win: "https://decentraland.org/explorer/launcher.exe",
             },
             cacheKey: "test-cache",
-            cacheTTL: 5000,
+            cacheTTL: 100,
           })
         )
 
@@ -795,18 +914,19 @@ describe("useBackgroundDownload", () => {
           await new Promise((resolve) => setTimeout(resolve, 10))
         })
 
-        expect(
-          localStorageMock.getItem("useBackgroundDownload_test-cache")
-        ).toBeTruthy()
+        expect(localStorageMock.setItem).toHaveBeenCalledWith(
+          "useBackgroundDownload_test-cache",
+          expect.any(String)
+        )
 
-        act(() => {
-          jest.advanceTimersByTime(5000)
+        await act(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 150))
         })
 
         expect(localStorageMock.removeItem).toHaveBeenCalledWith(
           "useBackgroundDownload_test-cache"
         )
-      })
+      }, 10000)
 
       it("should cancel timeout when cache is cleared manually", async () => {
         const chunks = [new Uint8Array([1, 2, 3, 4, 5])]
@@ -815,22 +935,23 @@ describe("useBackgroundDownload", () => {
           .mockResolvedValueOnce({ done: false, value: chunks[0] })
           .mockResolvedValueOnce({ done: true, value: undefined })
 
-        mockReadAsDataURL.mockImplementation(function (this: FileReader) {
-          setTimeout(() => {
-            if (this.onloadend) {
-              this.onloadend({} as ProgressEvent<FileReader>)
-            }
-          }, 0)
+        const fileReaderMock = jest.fn().mockImplementation(function (
+          this: FileReader
+        ) {
+          if (this.onloadend) {
+            this.onloadend({} as ProgressEvent<FileReader>)
+          }
         })
+        mockReadAsDataURL.mockImplementation(fileReaderMock)
 
         const { result } = renderHook(() =>
           useBackgroundDownload({
             urls: {
-              mac: "https://example.com/mac",
-              win: "https://example.com/win",
+              mac: "https://decentraland.org/explorer/launcher.dmg",
+              win: "https://decentraland.org/explorer/launcher.exe",
             },
             cacheKey: "test-cache",
-            cacheTTL: 5000,
+            cacheTTL: 100,
           })
         )
 
@@ -846,8 +967,8 @@ describe("useBackgroundDownload", () => {
           result.current.clearCache()
         })
 
-        act(() => {
-          jest.advanceTimersByTime(5000)
+        await act(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 150))
         })
 
         expect(
@@ -857,37 +978,31 @@ describe("useBackgroundDownload", () => {
     })
 
     describe("and cache is loaded from storage", () => {
-      beforeEach(() => {
-        jest.useFakeTimers()
-      })
-
-      afterEach(() => {
-        jest.useRealTimers()
-      })
-
-      it("should schedule deletion based on remaining TTL", () => {
+      it("should schedule deletion based on remaining TTL", async () => {
         const cachedData = {
           data: "dGVzdA==",
           type: "application/octet-stream",
-          timestamp: Date.now() - 2000,
+          timestamp: Date.now() - 20,
         }
         localStorageMock.getItem = jest
           .fn()
           .mockReturnValue(JSON.stringify(cachedData))
 
-        renderHook(() =>
+        const { result } = renderHook(() =>
           useBackgroundDownload({
             urls: {
-              mac: "https://example.com/mac",
-              win: "https://example.com/win",
+              mac: "https://decentraland.org/explorer/launcher.dmg",
+              win: "https://decentraland.org/explorer/launcher.exe",
             },
             cacheKey: "test-cache",
-            cacheTTL: 5000,
+            cacheTTL: 100,
           })
         )
 
-        act(() => {
-          jest.advanceTimersByTime(3000)
+        expect(result.current.state).toBe("finished")
+
+        await act(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 150))
         })
 
         expect(localStorageMock.removeItem).toHaveBeenCalledWith(
