@@ -1,6 +1,7 @@
 // Types
 export type { AsyncStateResult, AsyncStateResultState } from "./useAsyncState"
 export type { AsyncMemoResult, AsyncMemoResultState } from "./useAsyncMemo"
+export type { AdvancedNavigatorUAData } from "./useAdvancedUserAgentData"
 
 // Hooks
 export { useAdvancedUserAgentData } from "./useAdvancedUserAgentData"
