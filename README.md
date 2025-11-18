@@ -66,6 +66,341 @@ function BrowserInfo() {
 }
 ```
 
+### Analytics Hooks
+
+The package provides a set of hooks for analytics tracking using Segment. Here's how to use them:
+
+#### Setting up the AnalyticsProvider
+
+First, wrap your app with the AnalyticsProvider:
+
+```typescript
+import { AnalyticsProvider } from '@dcl/hooks'
+
+function App() {
+  return (
+    <AnalyticsProvider
+      writeKey="xyz1234"
+      userId="user-123" // Optional
+      traits={{ // Optional
+        name: 'John Doe',
+        email: 'john@example.com'
+      }}
+    >
+      <Main />
+    </AnalyticsProvider>
+  )
+}
+```
+
+#### Using the useAnalytics Hook
+
+The `useAnalytics` hook provides access to tracking functions:
+
+```typescript
+import { useAnalytics } from '@dcl/hooks'
+
+function MyComponent() {
+  const analytics = useAnalytics()
+
+  const handleButtonClick = () => {
+    if (analytics.isInitialized) {
+      // Track an event
+      analytics.track('Button Clicked', {
+        buttonId: 'submit',
+        timestamp: new Date().toISOString()
+      })
+
+      // Identify a user
+      analytics.identify('user-123', {
+        name: 'John Doe',
+        email: 'john@example.com'
+      })
+    }
+  }
+
+  return (
+    <button onClick={handleButtonClick}>
+      Click me
+    </button>
+  )
+}
+```
+
+#### Using the usePageTracking Hook
+
+The `usePageTracking` hook automatically tracks page views based on route changes:
+
+```typescript
+import { usePageTracking } from '@dcl/hooks'
+
+function MyPage() {
+  // Automatically tracks page view when route changes
+  usePageTracking()
+
+  return (
+    <div>
+      <h1>My Page</h1>
+      {/* Your page content */}
+    </div>
+  )
+}
+```
+
+If you need to track additional page properties, you can use the `useAnalytics` hook directly:
+
+```typescript
+import { useAnalytics } from '@dcl/hooks'
+
+function MyPage() {
+  const analytics = useAnalytics()
+
+  useEffect(() => {
+    if (analytics.isInitialized) {
+      analytics.page('My Page', {
+        category: 'Content',
+        section: 'Main',
+        timestamp: new Date().toISOString()
+      })
+    }
+  }, [analytics])
+
+  return (
+    <div>
+      <h1>My Page</h1>
+      {/* Your page content */}
+    </div>
+  )
+}
+```
+
+#### Complete Example
+
+Here's a complete example showing how to use all analytics features together:
+
+```typescript
+import { AnalyticsProvider, useAnalytics, usePageTracking } from '@dcl/hooks'
+
+function MyPage() {
+  // Track page views
+  usePageTracking()
+
+  return (
+    <div>
+      <h1>My Page</h1>
+      <UserProfile />
+    </div>
+  )
+}
+
+function UserProfile() {
+  const analytics = useAnalytics()
+
+  const handleProfileUpdate = () => {
+    if (analytics.isInitialized) {
+      // Track profile update event
+      analytics.track('Profile Updated', {
+        timestamp: new Date().toISOString(),
+        updateType: 'information'
+      })
+
+      // Update user traits
+      analytics.identify('user-123', {
+        lastUpdated: new Date().toISOString()
+      })
+    }
+  }
+
+  return (
+    <button onClick={handleProfileUpdate}>
+      Update Profile
+    </button>
+  )
+}
+
+function App() {
+  return (
+    <AnalyticsProvider
+      writeKey="xyz1234"
+      userId="user-123"
+      traits={{
+        name: 'John Doe',
+        email: 'john@example.com'
+      }}
+    >
+      <MyPage />
+    </AnalyticsProvider>
+  )
+}
+```
+
+### Analytics Hooks
+
+The package provides a set of hooks for analytics tracking using Segment. Here's how to use them:
+
+#### Setting up the AnalyticsProvider
+
+First, wrap your app with the AnalyticsProvider:
+
+```typescript
+import { AnalyticsProvider } from '@dcl/hooks'
+
+function App() {
+  return (
+    <AnalyticsProvider
+      writeKey="xyz1234"
+      userId="user-123" // Optional
+      traits={{ // Optional
+        name: 'John Doe',
+        email: 'john@example.com'
+      }}
+    >
+      <Main />
+    </AnalyticsProvider>
+  )
+}
+```
+
+#### Using the useAnalytics Hook
+
+The `useAnalytics` hook provides access to tracking functions:
+
+```typescript
+import { useAnalytics } from '@dcl/hooks'
+
+function MyComponent() {
+  const analytics = useAnalytics()
+
+  const handleButtonClick = () => {
+    if (analytics.isInitialized) {
+      // Track an event
+      analytics.track('Button Clicked', {
+        buttonId: 'submit',
+        timestamp: new Date().toISOString()
+      })
+
+      // Identify a user
+      analytics.identify('user-123', {
+        name: 'John Doe',
+        email: 'john@example.com'
+      })
+    }
+  }
+
+  return (
+    <button onClick={handleButtonClick}>
+      Click me
+    </button>
+  )
+}
+```
+
+#### Using the usePageTracking Hook
+
+The `usePageTracking` hook automatically tracks page views based on route changes:
+
+```typescript
+import { usePageTracking } from '@dcl/hooks'
+
+function MyPage() {
+  // Automatically tracks page view when route changes
+  usePageTracking()
+
+  return (
+    <div>
+      <h1>My Page</h1>
+      {/* Your page content */}
+    </div>
+  )
+}
+```
+
+If you need to track additional page properties, you can use the `useAnalytics` hook directly:
+
+```typescript
+import { useAnalytics } from '@dcl/hooks'
+
+function MyPage() {
+  const analytics = useAnalytics()
+
+  useEffect(() => {
+    if (analytics.isInitialized) {
+      analytics.page('My Page', {
+        category: 'Content',
+        section: 'Main',
+        timestamp: new Date().toISOString()
+      })
+    }
+  }, [analytics])
+
+  return (
+    <div>
+      <h1>My Page</h1>
+      {/* Your page content */}
+    </div>
+  )
+}
+```
+
+#### Complete Example
+
+Here's a complete example showing how to use all analytics features together:
+
+```typescript
+import { AnalyticsProvider, useAnalytics, usePageTracking } from '@dcl/hooks'
+
+function MyPage() {
+  // Track page views
+  usePageTracking()
+
+  return (
+    <div>
+      <h1>My Page</h1>
+      <UserProfile />
+    </div>
+  )
+}
+
+function UserProfile() {
+  const analytics = useAnalytics()
+
+  const handleProfileUpdate = () => {
+    if (analytics.isInitialized) {
+      // Track profile update event
+      analytics.track('Profile Updated', {
+        timestamp: new Date().toISOString(),
+        updateType: 'information'
+      })
+
+      // Update user traits
+      analytics.identify('user-123', {
+        lastUpdated: new Date().toISOString()
+      })
+    }
+  }
+
+  return (
+    <button onClick={handleProfileUpdate}>
+      Update Profile
+    </button>
+  )
+}
+
+function App() {
+  return (
+    <AnalyticsProvider
+      writeKey="xyz1234"
+      userId="user-123"
+      traits={{
+        name: 'John Doe',
+        email: 'john@example.com'
+      }}
+    >
+      <MyPage />
+    </AnalyticsProvider>
+  )
+}
+```
 
 ## License
 
