@@ -55,8 +55,11 @@
     "typescript-eslint": "^7.15.0"
   },
   "dependencies": {
+    "@dcl/crypto": "^3.4.5",
+    "@dcl/single-sign-on-client": "^2.0.0",
     "@segment/analytics-next": "^1.79.0",
     "@sentry/browser": "^9.0.0",
+    "ethers": "^6.15.0",
     "isbot": "^5.1.25",
     "ua-parser-js": "^2.0.2"
   },

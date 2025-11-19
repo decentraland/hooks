@@ -2,6 +2,14 @@
 export type { AsyncStateResult, AsyncStateResultState } from "./useAsyncState"
 export type { AsyncMemoResult, AsyncMemoResultState } from "./useAsyncMemo"
 export type { AdvancedNavigatorUAData } from "./useAdvancedUserAgentData"
+export type {
+  WalletOptions,
+  WalletResult,
+  WalletState,
+  AuthContextType,
+  WalletContextType,
+  IdentityContextType,
+} from "./useWallet"
 
 // Hooks
 export { useAdvancedUserAgentData } from "./useAdvancedUserAgentData"
@@ -13,3 +21,12 @@ export { useAsyncEffect } from "./useAsyncEffect"
 export { useAsyncMemo, createAsyncMemoState } from "./useAsyncMemo"
 export { useAnalytics } from "./useAnalytics"
 export { usePageTracking } from "./usePageTracking"
+export {
+  useWallet,
+  AuthProvider,
+  useAuthContext,
+  useWalletContext,
+  IdentityProvider,
+  useIdentityContext,
+  WalletProvider,
+} from "./useWallet"
