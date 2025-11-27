@@ -38,3 +38,5 @@ yarn-error.log*
 
 cjs/*
 esm/*
+.claude
+.cursor
