@@ -19,6 +19,7 @@ npm install @dcl/hooks
 - `usePatchState`: Partial state updates for complex objects
 - `useAsyncEffect`: Async version of useEffect
 - `useAsyncMemo`: Async version of useMemo
+- `useInfiniteScroll`: Infinite scroll functionality for loading more content
 
 ## Examples
 
@@ -61,6 +62,55 @@ function BrowserInfo() {
         <li>CPU Architecture: {data?.cpu.architecture}</li>
         <li>Mobile Device: {data?.mobile ? 'Yes' : 'No'}</li>
       </ul>
+    </div>
+  )
+}
+```
+
+### useInfiniteScroll
+
+```typescript
+import { useInfiniteScroll } from '@dcl/hooks'
+import { useState, useEffect } from 'react'
+
+function InfiniteList() {
+  const [items, setItems] = useState<string[]>([])
+  const [hasMore, setHasMore] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const loadMore = async () => {
+    if (isLoading) return
+
+    setIsLoading(true)
+    try {
+      // Simulate API call
+      const newItems = await fetchMoreItems(items.length)
+      setItems((prev) => [...prev, ...newItems])
+      
+      // Check if there's more data
+      setHasMore(newItems.length > 0)
+    } catch (error) {
+      console.error('Failed to load more items:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useInfiniteScroll({
+    onLoadMore: loadMore,
+    hasMore,
+    isLoading,
+    threshold: 500, // Trigger when 500px from bottom
+    debounceMs: 500, // Minimum time between triggers (default: 500ms)
+  })
+
+  return (
+    <div>
+      {items.map((item, index) => (
+        <div key={index}>{item}</div>
+      ))}
+      {isLoading && <div>Loading more...</div>}
+      {!hasMore && <div>No more items</div>}
     </div>
   )
 }
