@@ -1,4 +1,3 @@
-import { MemoryRouter } from "react-router"
 import { act, renderHook } from "@testing-library/react/pure"
 import { AnalyticsProvider } from "../../src/contexts/analytics/AnalyticsProvider"
 import { usePageTracking } from "../../src/hooks/usePageTracking"
@@ -15,71 +14,108 @@ jest.mock("../../src/hooks/useAnalytics", () => {
   }
 })
 
-// Get the mock for assertions
 const mockAnalytics = jest
   .requireMock("../../src/hooks/useAnalytics")
   .useAnalytics()
 
 describe("usePageTracking", () => {
-  const initialPath = "/initial"
-
   beforeEach(() => {
     jest.clearAllMocks()
+    Object.defineProperty(window, "location", {
+      value: {
+        pathname: "/initial",
+      },
+      writable: true,
+    })
   })
 
   describe("when mounted", () => {
-    beforeEach(async () => {
-      renderHook(() => usePageTracking(), {
-        wrapper: ({ children }) =>
-          AnalyticsProvider({
-            writeKey: "test-key",
-            children: MemoryRouter({
-              initialEntries: [initialPath],
-              children,
-            }),
-          }),
-      })
-      await act(async () => {})
+    let initialPath: string
+
+    beforeEach(() => {
+      initialPath = "/initial"
     })
 
-    it("should track initial page view", () => {
-      expect(mockAnalytics.page).toHaveBeenCalledWith(initialPath)
-    })
-
-    describe("when location changes", () => {
-      const newPath = "/new-path"
-
+    describe("and pathname is provided", () => {
       beforeEach(async () => {
-        renderHook(() => usePageTracking(), {
+        renderHook(() => usePageTracking(initialPath), {
           wrapper: ({ children }) =>
             AnalyticsProvider({
               writeKey: "test-key",
-              children: MemoryRouter({
-                initialEntries: [initialPath, newPath],
-                children,
-              }),
+              children,
             }),
         })
         await act(async () => {})
       })
 
-      it("should track new page view", () => {
-        expect(mockAnalytics.page).toHaveBeenCalledWith(newPath)
+      it("should track initial page view", () => {
+        expect(mockAnalytics.page).toHaveBeenCalledWith(initialPath)
+      })
+    })
+
+    describe("and pathname is not provided", () => {
+      beforeEach(async () => {
+        renderHook(() => usePageTracking(), {
+          wrapper: ({ children }) =>
+            AnalyticsProvider({
+              writeKey: "test-key",
+              children,
+            }),
+        })
+        await act(async () => {})
+      })
+
+      it("should track initial page view from window.location", () => {
+        expect(mockAnalytics.page).toHaveBeenCalledWith("/initial")
+      })
+    })
+
+    describe("when location changes", () => {
+      let newPath: string
+
+      beforeEach(() => {
+        newPath = "/new-path"
+      })
+
+      describe("and pathname is provided", () => {
+        beforeEach(async () => {
+          const { rerender } = renderHook(
+            ({ pathname }) => usePageTracking(pathname),
+            {
+              initialProps: { pathname: initialPath },
+              wrapper: ({ children }) =>
+                AnalyticsProvider({
+                  writeKey: "test-key",
+                  children,
+                }),
+            }
+          )
+          await act(async () => {})
+          rerender({ pathname: newPath })
+          await act(async () => {})
+        })
+
+        it("should track new page view", () => {
+          expect(mockAnalytics.page).toHaveBeenCalledWith(newPath)
+        })
       })
     })
   })
 
   describe("when analytics is not initialized", () => {
-    beforeEach(async () => {
+    let initialPath: string
+
+    beforeEach(() => {
+      initialPath = "/initial"
       mockAnalytics.isInitialized = false
-      renderHook(() => usePageTracking(), {
+    })
+
+    beforeEach(async () => {
+      renderHook(() => usePageTracking(initialPath), {
         wrapper: ({ children }) =>
           AnalyticsProvider({
             writeKey: "test-key",
-            children: MemoryRouter({
-              initialEntries: [initialPath],
-              children,
-            }),
+            children,
           }),
       })
       await act(async () => {})
