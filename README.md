@@ -179,17 +179,17 @@ function MyComponent() {
 
 #### Using the usePageTracking Hook
 
-The `usePageTracking` hook tracks page views when the pathname changes. You need to pass the current pathname as a parameter:
+The `usePageTracking` hook tracks page views when the pathname changes. You need to pass the current pathname as a parameter from your router:
 
 ```typescript
 import { usePageTracking } from '@dcl/hooks'
+import { useLocation } from 'react-router-dom'
 
 function MyPage() {
-  // Get pathname from your router or window.location
-  const pathname = typeof window !== 'undefined' ? window.location.pathname : '/'
+  const location = useLocation()
   
   // Tracks page view when pathname changes
-  usePageTracking(pathname)
+  usePageTracking(location.pathname)
 
   return (
     <div>
@@ -197,20 +197,6 @@ function MyPage() {
       {/* Your page content */}
     </div>
   )
-}
-```
-
-If you're using a router library, you can get the pathname from it:
-
-```typescript
-import { usePageTracking } from '@dcl/hooks'
-import { useLocation } from 'react-router-dom' // React Router example
-
-function MyPage() {
-  const location = useLocation()
-  usePageTracking(location.pathname)
-  
-  return <div>My Page</div>
 }
 ```
 
@@ -247,13 +233,13 @@ Here's a complete example showing how to use all analytics features together:
 
 ```typescript
 import { AnalyticsProvider, useAnalytics, usePageTracking } from '@dcl/hooks'
+import { useLocation } from 'react-router-dom'
 
 function MyPage() {
-  // Get pathname from your router or window.location
-  const pathname = typeof window !== 'undefined' ? window.location.pathname : '/'
+  const location = useLocation()
   
   // Track page views
-  usePageTracking(pathname)
+  usePageTracking(location.pathname)
 
   return (
     <div>
@@ -367,17 +353,17 @@ function MyComponent() {
 
 #### Using the usePageTracking Hook
 
-The `usePageTracking` hook tracks page views when the pathname changes. You need to pass the current pathname as a parameter:
+The `usePageTracking` hook tracks page views when the pathname changes. You need to pass the current pathname as a parameter from your router:
 
 ```typescript
 import { usePageTracking } from '@dcl/hooks'
+import { useLocation } from 'react-router-dom'
 
 function MyPage() {
-  // Get pathname from your router or window.location
-  const pathname = typeof window !== 'undefined' ? window.location.pathname : '/'
+  const location = useLocation()
   
   // Tracks page view when pathname changes
-  usePageTracking(pathname)
+  usePageTracking(location.pathname)
 
   return (
     <div>
@@ -385,20 +371,6 @@ function MyPage() {
       {/* Your page content */}
     </div>
   )
-}
-```
-
-If you're using a router library, you can get the pathname from it:
-
-```typescript
-import { usePageTracking } from '@dcl/hooks'
-import { useLocation } from 'react-router-dom' // React Router example
-
-function MyPage() {
-  const location = useLocation()
-  usePageTracking(location.pathname)
-  
-  return <div>My Page</div>
 }
 ```
 
@@ -435,13 +407,13 @@ Here's a complete example showing how to use all analytics features together:
 
 ```typescript
 import { AnalyticsProvider, useAnalytics, usePageTracking } from '@dcl/hooks'
+import { useLocation } from 'react-router-dom'
 
 function MyPage() {
-  // Get pathname from your router or window.location
-  const pathname = typeof window !== 'undefined' ? window.location.pathname : '/'
+  const location = useLocation()
   
   // Track page views
-  usePageTracking(pathname)
+  usePageTracking(location.pathname)
 
   return (
     <div>
