@@ -179,14 +179,17 @@ function MyComponent() {
 
 #### Using the usePageTracking Hook
 
-The `usePageTracking` hook automatically tracks page views based on route changes:
+The `usePageTracking` hook tracks page views when the pathname changes. You need to pass the current pathname as a parameter:
 
 ```typescript
 import { usePageTracking } from '@dcl/hooks'
+import { useLocation } from 'react-router-dom' // or your router of choice
 
 function MyPage() {
-  // Automatically tracks page view when route changes
-  usePageTracking()
+  const location = useLocation()
+  
+  // Tracks page view when pathname changes
+  usePageTracking(location.pathname)
 
   return (
     <div>
@@ -230,10 +233,13 @@ Here's a complete example showing how to use all analytics features together:
 
 ```typescript
 import { AnalyticsProvider, useAnalytics, usePageTracking } from '@dcl/hooks'
+import { useLocation } from 'react-router-dom' // or your router of choice
 
 function MyPage() {
+  const location = useLocation()
+  
   // Track page views
-  usePageTracking()
+  usePageTracking(location.pathname)
 
   return (
     <div>
@@ -347,14 +353,17 @@ function MyComponent() {
 
 #### Using the usePageTracking Hook
 
-The `usePageTracking` hook automatically tracks page views based on route changes:
+The `usePageTracking` hook tracks page views when the pathname changes. You need to pass the current pathname as a parameter:
 
 ```typescript
 import { usePageTracking } from '@dcl/hooks'
+import { useLocation } from 'react-router-dom' // or your router of choice
 
 function MyPage() {
-  // Automatically tracks page view when route changes
-  usePageTracking()
+  const location = useLocation()
+  
+  // Tracks page view when pathname changes
+  usePageTracking(location.pathname)
 
   return (
     <div>
@@ -398,10 +407,13 @@ Here's a complete example showing how to use all analytics features together:
 
 ```typescript
 import { AnalyticsProvider, useAnalytics, usePageTracking } from '@dcl/hooks'
+import { useLocation } from 'react-router-dom' // or your router of choice
 
 function MyPage() {
+  const location = useLocation()
+  
   // Track page views
-  usePageTracking()
+  usePageTracking(location.pathname)
 
   return (
     <div>
