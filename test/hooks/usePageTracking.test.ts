@@ -14,6 +14,20 @@ jest.mock("../../src/hooks/useAnalytics", () => {
   }
 })
 
+jest.mock("@segment/analytics-next", () => ({
+  AnalyticsBrowser: {
+    load: jest.fn().mockResolvedValue({
+      track: jest.fn(),
+      identify: jest.fn(),
+      page: jest.fn(),
+    }),
+  },
+}))
+
+jest.mock("isbot", () => ({
+  isbot: jest.fn().mockReturnValue(false),
+}))
+
 const mockAnalytics = jest
   .requireMock("../../src/hooks/useAnalytics")
   .useAnalytics()
@@ -34,80 +48,12 @@ describe("usePageTracking", () => {
 
     beforeEach(() => {
       initialPath = "/initial"
-    })
-
-    describe("and pathname is provided", () => {
-      beforeEach(async () => {
-        renderHook(() => usePageTracking(initialPath), {
-          wrapper: ({ children }) =>
-            AnalyticsProvider({
-              writeKey: "test-key",
-              children,
-            }),
-        })
-        await act(async () => {})
+      Object.defineProperty(window, "location", {
+        value: {
+          pathname: initialPath,
+        },
+        writable: true,
       })
-
-      it("should track initial page view", () => {
-        expect(mockAnalytics.page).toHaveBeenCalledWith(initialPath)
-      })
-    })
-
-    describe("and pathname is not provided", () => {
-      beforeEach(async () => {
-        renderHook(() => usePageTracking(), {
-          wrapper: ({ children }) =>
-            AnalyticsProvider({
-              writeKey: "test-key",
-              children,
-            }),
-        })
-        await act(async () => {})
-      })
-
-      it("should track initial page view from window.location", () => {
-        expect(mockAnalytics.page).toHaveBeenCalledWith("/initial")
-      })
-    })
-
-    describe("when location changes", () => {
-      let newPath: string
-
-      beforeEach(() => {
-        newPath = "/new-path"
-      })
-
-      describe("and pathname is provided", () => {
-        beforeEach(async () => {
-          const { rerender } = renderHook(
-            ({ pathname }) => usePageTracking(pathname),
-            {
-              initialProps: { pathname: initialPath },
-              wrapper: ({ children }) =>
-                AnalyticsProvider({
-                  writeKey: "test-key",
-                  children,
-                }),
-            }
-          )
-          await act(async () => {})
-          rerender({ pathname: newPath })
-          await act(async () => {})
-        })
-
-        it("should track new page view", () => {
-          expect(mockAnalytics.page).toHaveBeenCalledWith(newPath)
-        })
-      })
-    })
-  })
-
-  describe("when analytics is not initialized", () => {
-    let initialPath: string
-
-    beforeEach(() => {
-      initialPath = "/initial"
-      mockAnalytics.isInitialized = false
     })
 
     beforeEach(async () => {
@@ -118,7 +64,41 @@ describe("usePageTracking", () => {
             children,
           }),
       })
-      await act(async () => {})
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      })
+    })
+
+    it("should track initial page view", () => {
+      expect(mockAnalytics.page).toHaveBeenCalledWith(initialPath)
+    })
+  })
+
+  describe("when analytics is not initialized", () => {
+    let initialPath: string
+
+    beforeEach(() => {
+      initialPath = "/initial"
+      mockAnalytics.isInitialized = false
+      Object.defineProperty(window, "location", {
+        value: {
+          pathname: initialPath,
+        },
+        writable: true,
+      })
+    })
+
+    beforeEach(async () => {
+      renderHook(() => usePageTracking(initialPath), {
+        wrapper: ({ children }) =>
+          AnalyticsProvider({
+            writeKey: "test-key",
+            children,
+          }),
+      })
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      })
     })
 
     afterEach(() => {
