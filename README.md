@@ -20,6 +20,7 @@ npm install @dcl/hooks
 - `useAsyncEffect`: Async version of useEffect
 - `useAsyncMemo`: Async version of useMemo
 - `useInfiniteScroll`: Infinite scroll functionality for loading more content
+- `useTranslation`: Simple and lightweight translation management
 
 ## Examples
 
@@ -460,6 +461,70 @@ function App() {
     >
       <MyPage />
     </AnalyticsProvider>
+  )
+}
+```
+
+### useTranslation
+
+```typescript
+import { useTranslation } from '@dcl/hooks'
+
+const translations = {
+  en: {
+    greeting: 'Hello, {name}!',
+    welcome: 'Welcome to our app'
+  },
+  es: {
+    greeting: 'Hola, {name}!',
+    welcome: 'Bienvenido a nuestra aplicación'
+  }
+}
+
+function MyComponent() {
+  const { t, locale, setLocale } = useTranslation({
+    locale: 'en',
+    translations
+  })
+
+  return (
+    <div>
+      <p>{t('greeting', { name: 'John' })}</p>
+      <p>{t('welcome')}</p>
+      <button onClick={() => setLocale('es')}>
+        Switch to Spanish
+      </button>
+    </div>
+  )
+}
+```
+
+With fallback locale:
+
+```typescript
+const translations = {
+  en: {
+    greeting: 'Hello!',
+    welcome: 'Welcome!'
+  },
+  es: {
+    greeting: 'Hola!'
+    // 'welcome' is missing in Spanish
+  }
+}
+
+function MyComponent() {
+  const { t } = useTranslation({
+    locale: 'es',
+    translations,
+    fallbackLocale: 'en' // Will use English if translation is missing
+  })
+
+  return (
+    <div>
+      <p>{t('greeting')}</p> {/* Shows: "Hola!" */}
+      <p>{t('welcome')}</p> {/* Shows: "Welcome!" (from fallback) */}
+    </div>
   )
 }
 ```
