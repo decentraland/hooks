@@ -1,3 +1,5 @@
+import type { IntlShape } from "react-intl"
+
 type Translations = Record<string, string>
 
 type LanguageTranslations = Record<string, Translations>
@@ -17,6 +19,7 @@ type TranslationOptions<L extends string = string> = {
 
 type TranslationResult = {
   t: (key: string, values?: Record<string, string | number>) => string
+  intl: IntlShape
   locale: string
   setLocale: (locale: string) => void
   loading: boolean

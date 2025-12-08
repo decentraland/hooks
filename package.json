@@ -57,6 +57,7 @@
     "@segment/analytics-next": "^1.79.0",
     "@sentry/browser": "^9.0.0",
     "isbot": "^5.1.25",
+    "react-intl": "^6.8.3",
     "ua-parser-js": "^2.0.2"
   },
   "keywords": [

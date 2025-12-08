@@ -1,37 +1,23 @@
-import { useCallback, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
+import { createIntl, createIntlCache } from "react-intl"
 import {
   TranslationOptions,
   TranslationResult,
   TranslationState,
 } from "./useTranslation.type"
 
-/**
- * Simple interpolation function to replace placeholders in translation strings
- * @param text - The translation string with placeholders like {name}
- * @param values - The values to interpolate
- * @returns The interpolated string
- */
-const interpolate = (
-  text: string,
-  values?: Record<string, string | number>
-): string => {
-  if (!values) return text
-
-  return Object.entries(values).reduce((result, [key, value]) => {
-    const regex = new RegExp(`\\{${key}\\}`, "g")
-    return result.replace(regex, String(value))
-  }, text)
-}
+// Create a cache for react-intl to improve performance
+const cache = createIntlCache()
 
 /**
- * Hook to manage translations in a React application
+ * Hook to manage translations in a React application using react-intl
  *
  * @param options - Configuration options for translations
  * @param options.locale - The initial locale to use
  * @param options.translations - An object containing all translations for all locales
  * @param options.fallbackLocale - Optional fallback locale if a translation is not found
  *
- * @returns An object with translation utilities
+ * @returns An object with translation utilities including the full IntlShape instance
  *
  * @example
  * ```tsx
@@ -47,7 +33,7 @@ const interpolate = (
  * }
  *
  * function MyComponent() {
- *   const { t, locale, setLocale } = useTranslation({
+ *   const { t, intl, locale, setLocale } = useTranslation({
  *     locale: 'en',
  *     translations
  *   })
@@ -55,6 +41,8 @@ const interpolate = (
  *   return (
  *     <div>
  *       <p>{t('greeting', { name: 'John' })}</p>
+ *       <p>{intl.formatNumber(1000)}</p>
+ *       <p>{intl.formatDate(new Date())}</p>
  *       <button onClick={() => setLocale('es')}>Switch to Spanish</button>
  *     </div>
  *   )
@@ -71,30 +59,47 @@ const useTranslation = <L extends string = string>(
     error: null,
   })
 
+  // Create intl instance with current locale and translations
+  const intl = useMemo(() => {
+    const currentTranslations = state.translations[state.locale]
+
+    if (!currentTranslations) {
+      console.error(
+        `No translations found for locale "${state.locale}". Using empty translations.`
+      )
+      return createIntl(
+        {
+          locale: state.locale,
+          messages: {},
+        },
+        cache
+      )
+    }
+
+    // Merge with fallback locale if provided
+    const messages =
+      options.fallbackLocale && state.locale !== options.fallbackLocale
+        ? {
+            ...state.translations[options.fallbackLocale],
+            ...currentTranslations,
+          }
+        : currentTranslations
+
+    return createIntl(
+      {
+        locale: state.locale,
+        messages,
+      },
+      cache
+    )
+  }, [state.locale, state.translations, options.fallbackLocale])
+
+  // Simplified t() function using intl.formatMessage
   const t = useCallback(
     (key: string, values?: Record<string, string | number>): string => {
-      const currentTranslations = state.translations[state.locale]
-
-      if (currentTranslations && currentTranslations[key]) {
-        return interpolate(currentTranslations[key], values)
-      }
-
-      if (options.fallbackLocale && state.locale !== options.fallbackLocale) {
-        const fallbackTranslations = state.translations[options.fallbackLocale]
-        if (fallbackTranslations && fallbackTranslations[key]) {
-          console.warn(
-            `Translation key "${key}" not found for locale "${state.locale}", using fallback locale "${options.fallbackLocale}"`
-          )
-          return interpolate(fallbackTranslations[key], values)
-        }
-      }
-
-      console.warn(
-        `Translation key "${key}" not found for locale "${state.locale}"`
-      )
-      return key
+      return intl.formatMessage({ id: key }, values)
     },
-    [state.locale, state.translations, options.fallbackLocale]
+    [intl]
   )
 
   const setLocale = useCallback(
@@ -121,6 +126,7 @@ const useTranslation = <L extends string = string>(
 
   return {
     t,
+    intl,
     locale: state.locale,
     setLocale,
     loading: state.loading,

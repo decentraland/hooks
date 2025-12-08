@@ -226,7 +226,6 @@ describe("useTranslation", () => {
   describe("when a translation key is not found", () => {
     describe("and no fallback locale is configured", () => {
       let mockTranslations: LanguageTranslations
-      let consoleWarnSpy: jest.SpyInstance
 
       beforeEach(() => {
         mockTranslations = {
@@ -234,7 +233,6 @@ describe("useTranslation", () => {
             simple: "Simple text",
           },
         }
-        consoleWarnSpy = jest.spyOn(console, "warn")
       })
 
       it("should return the key itself", () => {
@@ -249,27 +247,11 @@ describe("useTranslation", () => {
 
         expect(translation).toBe("nonexistent.key")
       })
-
-      it("should log a warning with the missing key and locale", () => {
-        const { result } = renderHook(() =>
-          useTranslation({
-            locale: "en",
-            translations: mockTranslations,
-          })
-        )
-
-        result.current.t("nonexistent.key")
-
-        expect(consoleWarnSpy).toHaveBeenCalledWith(
-          'Translation key "nonexistent.key" not found for locale "en"'
-        )
-      })
     })
 
     describe("and a fallback locale is configured", () => {
       describe("and the key exists in the fallback locale", () => {
         let mockTranslations: LanguageTranslations
-        let consoleWarnSpy: jest.SpyInstance
 
         beforeEach(() => {
           mockTranslations = {
@@ -280,7 +262,6 @@ describe("useTranslation", () => {
               greeting: "Bonjour!",
             },
           }
-          consoleWarnSpy = jest.spyOn(console, "warn")
         })
 
         it("should return the translation from the fallback locale", () => {
@@ -296,27 +277,10 @@ describe("useTranslation", () => {
 
           expect(translation).toBe("Welcome to our app")
         })
-
-        it("should log a warning about using the fallback locale", () => {
-          const { result } = renderHook(() =>
-            useTranslation({
-              locale: "fr",
-              translations: mockTranslations,
-              fallbackLocale: "en",
-            })
-          )
-
-          result.current.t("welcome")
-
-          expect(consoleWarnSpy).toHaveBeenCalledWith(
-            'Translation key "welcome" not found for locale "fr", using fallback locale "en"'
-          )
-        })
       })
 
       describe("and the key does not exist in the fallback locale", () => {
         let mockTranslations: LanguageTranslations
-        let consoleWarnSpy: jest.SpyInstance
 
         beforeEach(() => {
           mockTranslations = {
@@ -327,7 +291,6 @@ describe("useTranslation", () => {
               greeting: "Bonjour!",
             },
           }
-          consoleWarnSpy = jest.spyOn(console, "warn")
         })
 
         it("should return the key itself", () => {
@@ -343,21 +306,64 @@ describe("useTranslation", () => {
 
           expect(translation).toBe("nonexistent.key")
         })
-
-        it("should log a warning", () => {
-          const { result } = renderHook(() =>
-            useTranslation({
-              locale: "fr",
-              translations: mockTranslations,
-              fallbackLocale: "en",
-            })
-          )
-
-          result.current.t("nonexistent.key")
-
-          expect(consoleWarnSpy).toHaveBeenCalled()
-        })
       })
+    })
+  })
+
+  describe("when using the intl object", () => {
+    let mockTranslations: LanguageTranslations
+
+    beforeEach(() => {
+      mockTranslations = {
+        en: {
+          greeting: "Hello!",
+        },
+      }
+    })
+
+    it("should provide access to formatNumber", () => {
+      const { result } = renderHook(() =>
+        useTranslation({
+          locale: "en",
+          translations: mockTranslations,
+        })
+      )
+
+      const formatted = result.current.intl.formatNumber(1000)
+
+      expect(formatted).toBe("1,000")
+    })
+
+    it("should provide access to formatDate", () => {
+      const { result } = renderHook(() =>
+        useTranslation({
+          locale: "en",
+          translations: mockTranslations,
+        })
+      )
+
+      const date = new Date(Date.UTC(2024, 0, 15))
+      const formatted = result.current.intl.formatDate(date, {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        timeZone: "UTC",
+      })
+
+      expect(formatted).toBe("January 15, 2024")
+    })
+
+    it("should provide access to formatMessage", () => {
+      const { result } = renderHook(() =>
+        useTranslation({
+          locale: "en",
+          translations: mockTranslations,
+        })
+      )
+
+      const formatted = result.current.intl.formatMessage({ id: "greeting" })
+
+      expect(formatted).toBe("Hello!")
     })
   })
 

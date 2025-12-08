@@ -467,22 +467,28 @@ function App() {
 
 ### useTranslation
 
+The `useTranslation` hook provides i18n capabilities powered by `react-intl`, giving you access to advanced formatting functions for numbers, dates, currencies, and more.
+
+Basic usage:
+
 ```typescript
 import { useTranslation } from '@dcl/hooks'
 
 const translations = {
   en: {
     greeting: 'Hello, {name}!',
-    welcome: 'Welcome to our app'
+    welcome: 'Welcome to our app',
+    items: '{count, plural, =0 {No items} one {# item} other {# items}}'
   },
   es: {
     greeting: 'Hola, {name}!',
-    welcome: 'Bienvenido a nuestra aplicación'
+    welcome: 'Bienvenido a nuestra aplicación',
+    items: '{count, plural, =0 {Sin elementos} one {# elemento} other {# elementos}}'
   }
 }
 
 function MyComponent() {
-  const { t, locale, setLocale } = useTranslation({
+  const { t, intl, locale, setLocale } = useTranslation({
     locale: 'en',
     translations
   })
@@ -490,10 +496,51 @@ function MyComponent() {
   return (
     <div>
       <p>{t('greeting', { name: 'John' })}</p>
-      <p>{t('welcome')}</p>
+      <p>{t('items', { count: 5 })}</p>
       <button onClick={() => setLocale('es')}>
         Switch to Spanish
       </button>
+    </div>
+  )
+}
+```
+
+Using the `intl` object for advanced formatting:
+
+```typescript
+function AdvancedFormattingExample() {
+  const { t, intl } = useTranslation({
+    locale: 'en',
+    translations: {
+      en: {
+        product_price: 'Price: {price}'
+      }
+    }
+  })
+
+  return (
+    <div>
+      {/* Format numbers */}
+      <p>Count: {intl.formatNumber(1000)}</p>
+
+      {/* Format dates */}
+      <p>Today: {intl.formatDate(new Date(), {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })}</p>
+
+      {/* Format currency */}
+      <p>{intl.formatNumber(99.99, {
+        style: 'currency',
+        currency: 'USD'
+      })}</p>
+
+      {/* Format relative time */}
+      <p>{intl.formatRelativeTime(-1, 'day')}</p>
+
+      {/* Use formatMessage directly */}
+      <p>{intl.formatMessage({ id: 'product_price' }, { price: '$99' })}</p>
     </div>
   )
 }
