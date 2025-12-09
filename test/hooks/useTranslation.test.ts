@@ -1,4 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { ReactNode } from "react"
 import { act, renderHook } from "@testing-library/react/pure"
+import { TranslationProvider } from "../../src/contexts/translation/TranslationProvider"
 import { useTranslation } from "../../src/hooks/useTranslation"
 import type { LanguageTranslations } from "../../src/hooks/useTranslation"
 
@@ -475,6 +478,286 @@ describe("useTranslation", () => {
       })
 
       expect(result.current.locale).toBe("es")
+    })
+  })
+
+  describe("when using context mode", () => {
+    let mockTranslations: LanguageTranslations
+
+    beforeEach(() => {
+      mockTranslations = {
+        en: {
+          greeting: "Hello!",
+          welcome: "Welcome",
+        },
+        es: {
+          greeting: "Hola!",
+          welcome: "Bienvenido",
+        },
+      }
+    })
+
+    it("should use translations from TranslationProvider", () => {
+      const wrapper = ({ children }: { children: ReactNode }) =>
+        TranslationProvider({
+          locale: "en",
+          translations: mockTranslations,
+          children,
+        })
+
+      const { result } = renderHook(() => useTranslation(), { wrapper })
+
+      expect(result.current.locale).toBe("en")
+      expect(result.current.t("greeting")).toBe("Hello!")
+    })
+
+    it("should allow changing locale through context", () => {
+      const wrapper = ({ children }: { children: ReactNode }) =>
+        TranslationProvider({
+          locale: "en",
+          translations: mockTranslations,
+          children,
+        })
+
+      const { result } = renderHook(() => useTranslation(), { wrapper })
+
+      act(() => {
+        result.current.setLocale("es")
+      })
+
+      expect(result.current.locale).toBe("es")
+      expect(result.current.t("greeting")).toBe("Hola!")
+    })
+
+    it("should support fallback locale through context", () => {
+      const translationsWithFallback: LanguageTranslations = {
+        en: {
+          welcome: "Welcome",
+        },
+        fr: {
+          greeting: "Bonjour!",
+        },
+      }
+
+      const wrapper = ({ children }: { children: ReactNode }) =>
+        TranslationProvider({
+          locale: "fr",
+          translations: translationsWithFallback,
+          fallbackLocale: "en",
+          children,
+        })
+
+      const { result } = renderHook(() => useTranslation(), { wrapper })
+
+      expect(result.current.t("welcome")).toBe("Welcome")
+    })
+  })
+
+  describe("when validation errors occur", () => {
+    describe("and used without options and without context", () => {
+      it("should throw an error", () => {
+        expect(() => renderHook(() => useTranslation())).toThrow(
+          "useTranslation must be used with either options or within a TranslationProvider"
+        )
+      })
+    })
+
+    describe("and used with options but without locale", () => {
+      let mockTranslations: LanguageTranslations
+
+      beforeEach(() => {
+        mockTranslations = {
+          en: {
+            greeting: "Hello!",
+          },
+        }
+      })
+
+      it("should throw an error", () => {
+        expect(() =>
+          renderHook(() =>
+            useTranslation({
+              translations: mockTranslations,
+            } as any)
+          )
+        ).toThrow("locale is required when using useTranslation with options")
+      })
+    })
+
+    describe("and used with options but without translations", () => {
+      it("should throw an error", () => {
+        expect(() =>
+          renderHook(() =>
+            useTranslation({
+              locale: "en",
+            } as any)
+          )
+        ).toThrow(
+          "translations is required when using useTranslation with options"
+        )
+      })
+    })
+  })
+
+  describe("when initial locale has no translations", () => {
+    describe("and fallback locale is available", () => {
+      let mockTranslations: LanguageTranslations
+      let consoleErrorSpy: jest.SpyInstance
+
+      beforeEach(() => {
+        mockTranslations = {
+          en: {
+            greeting: "Hello!",
+            welcome: "Welcome",
+          },
+        }
+        consoleErrorSpy = jest.spyOn(console, "error").mockImplementation()
+      })
+
+      it("should use fallback locale translations", () => {
+        const { result } = renderHook(() =>
+          useTranslation({
+            locale: "fr",
+            translations: mockTranslations,
+            fallbackLocale: "en",
+          })
+        )
+
+        expect(result.current.t("greeting")).toBe("Hello!")
+        expect(result.current.t("welcome")).toBe("Welcome")
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          'No translations found for locale "fr". Using fallback locale "en".'
+        )
+      })
+    })
+
+    describe("and no fallback locale is available", () => {
+      let mockTranslations: LanguageTranslations
+      let consoleErrorSpy: jest.SpyInstance
+
+      beforeEach(() => {
+        mockTranslations = {
+          en: {
+            greeting: "Hello!",
+          },
+        }
+        consoleErrorSpy = jest.spyOn(console, "error").mockImplementation()
+      })
+
+      it("should use empty translations", () => {
+        const { result } = renderHook(() =>
+          useTranslation({
+            locale: "fr",
+            translations: mockTranslations,
+          })
+        )
+
+        expect(result.current.t("greeting")).toBe("greeting")
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          'No translations found for locale "fr". Using empty translations.'
+        )
+      })
+    })
+  })
+
+  describe("when merging fallback locale with current locale", () => {
+    let mockTranslations: LanguageTranslations
+
+    beforeEach(() => {
+      mockTranslations = {
+        en: {
+          greeting: "Hello!",
+          welcome: "Welcome",
+          common: "Common text",
+        },
+        fr: {
+          greeting: "Bonjour!",
+          common: "Texte commun",
+        },
+      }
+    })
+
+    it("should merge fallback translations with current locale translations", () => {
+      const { result } = renderHook(() =>
+        useTranslation({
+          locale: "fr",
+          translations: mockTranslations,
+          fallbackLocale: "en",
+        })
+      )
+
+      expect(result.current.t("greeting")).toBe("Bonjour!")
+      expect(result.current.t("welcome")).toBe("Welcome")
+      expect(result.current.t("common")).toBe("Texte commun")
+    })
+
+    it("should prioritize current locale over fallback when both have the same key", () => {
+      const { result } = renderHook(() =>
+        useTranslation({
+          locale: "fr",
+          translations: mockTranslations,
+          fallbackLocale: "en",
+        })
+      )
+
+      expect(result.current.t("common")).toBe("Texte commun")
+    })
+  })
+
+  describe("when using advanced intl formatting", () => {
+    let mockTranslations: LanguageTranslations
+
+    beforeEach(() => {
+      mockTranslations = {
+        en: {
+          greeting: "Hello!",
+        },
+      }
+    })
+
+    it("should format numbers as currency", () => {
+      const { result } = renderHook(() =>
+        useTranslation({
+          locale: "en",
+          translations: mockTranslations,
+        })
+      )
+
+      const formatted = result.current.intl.formatNumber(99.99, {
+        style: "currency",
+        currency: "USD",
+      })
+
+      expect(formatted).toBe("$99.99")
+    })
+
+    it("should format relative time", () => {
+      const { result } = renderHook(() =>
+        useTranslation({
+          locale: "en",
+          translations: mockTranslations,
+        })
+      )
+
+      const formatted = result.current.intl.formatRelativeTime(-1, "day")
+
+      expect(["yesterday", "1 day ago"]).toContain(formatted)
+    })
+
+    it("should format numbers with custom options", () => {
+      const { result } = renderHook(() =>
+        useTranslation({
+          locale: "en",
+          translations: mockTranslations,
+        })
+      )
+
+      const formatted = result.current.intl.formatNumber(0.1234, {
+        style: "percent",
+        minimumFractionDigits: 2,
+      })
+
+      expect(formatted).toBe("12.34%")
     })
   })
 })
