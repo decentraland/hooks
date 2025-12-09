@@ -467,7 +467,7 @@ function App() {
 
 ### useTranslation
 
-The `useTranslation` hook provides i18n capabilities powered by `react-intl`, giving you access to advanced formatting functions for numbers, dates, currencies, and more.
+The `useTranslation` hook provides i18n capabilities powered by `@formatjs/intl`, giving you access to advanced formatting functions for numbers, dates, currencies, and more.
 
 Basic usage:
 

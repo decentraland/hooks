@@ -1,4 +1,4 @@
-import type { IntlShape } from "react-intl"
+import type { IntlShape } from "@formatjs/intl"
 
 type Translations = Record<string, string>
 

@@ -1,16 +1,16 @@
 import { useCallback, useMemo, useState } from "react"
-import { createIntl, createIntlCache } from "react-intl"
+import { createIntl, createIntlCache } from "@formatjs/intl"
 import {
   TranslationOptions,
   TranslationResult,
   TranslationState,
 } from "./useTranslation.type"
 
-// Create a cache for react-intl to improve performance
+// Create a cache for @formatjs/intl to improve performance
 const cache = createIntlCache()
 
 /**
- * Hook to manage translations in a React application using react-intl
+ * Hook to manage translations in a React application using @formatjs/intl
  *
  * @param options - Configuration options for translations
  * @param options.locale - The initial locale to use
