@@ -5,7 +5,7 @@ import {
   TranslationResult,
   TranslationState,
 } from "./useTranslation.type"
-import { TranslationContext } from "../../contexts/translation/TranslationProvider"
+import { TranslationContext } from "../../contexts/translation/TranslationContext"
 
 // Create a cache for @formatjs/intl to improve performance
 const cache = createIntlCache()

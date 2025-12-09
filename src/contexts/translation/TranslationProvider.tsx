@@ -1,8 +1,7 @@
-import { createContext, useMemo } from "react"
+import { useMemo } from "react"
+import { TranslationContext } from "./TranslationContext"
 import { useTranslation } from "../../hooks/useTranslation"
 import type { TranslationContextType, TranslationProviderProps } from "./types"
-
-const TranslationContext = createContext<TranslationContextType | null>(null)
 
 const TranslationProvider = <L extends string = string>(
   props: TranslationProviderProps<L>
@@ -27,4 +26,4 @@ const TranslationProvider = <L extends string = string>(
   )
 }
 
-export { TranslationContext, TranslationProvider }
+export { TranslationProvider }
