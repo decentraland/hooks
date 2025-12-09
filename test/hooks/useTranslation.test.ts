@@ -760,4 +760,207 @@ describe("useTranslation", () => {
       expect(formatted).toBe("12.34%")
     })
   })
+
+  describe("when using ICU message syntax", () => {
+    describe("and using pluralization", () => {
+      let mockTranslations: LanguageTranslations
+
+      beforeEach(() => {
+        mockTranslations = {
+          en: {
+            items:
+              "{count, plural, =0 {No items} one {# item} other {# items}}",
+          },
+          es: {
+            items:
+              "{count, plural, =0 {Sin elementos} one {# elemento} other {# elementos}}",
+          },
+        }
+      })
+
+      it("should handle zero count", () => {
+        const { result } = renderHook(() =>
+          useTranslation({
+            locale: "en",
+            translations: mockTranslations,
+          })
+        )
+
+        expect(result.current.t("items", { count: 0 })).toBe("No items")
+      })
+
+      it("should handle singular count", () => {
+        const { result } = renderHook(() =>
+          useTranslation({
+            locale: "en",
+            translations: mockTranslations,
+          })
+        )
+
+        expect(result.current.t("items", { count: 1 })).toBe("1 item")
+      })
+
+      it("should handle plural count", () => {
+        const { result } = renderHook(() =>
+          useTranslation({
+            locale: "en",
+            translations: mockTranslations,
+          })
+        )
+
+        expect(result.current.t("items", { count: 5 })).toBe("5 items")
+      })
+
+      it("should handle pluralization in different locales", () => {
+        const { result } = renderHook(() =>
+          useTranslation({
+            locale: "es",
+            translations: mockTranslations,
+          })
+        )
+
+        expect(result.current.t("items", { count: 1 })).toBe("1 elemento")
+        expect(result.current.t("items", { count: 5 })).toBe("5 elementos")
+      })
+    })
+
+    describe("and using select syntax", () => {
+      let mockTranslations: LanguageTranslations
+
+      beforeEach(() => {
+        mockTranslations = {
+          en: {
+            gender: "{gender, select, male {He} female {She} other {They}}",
+          },
+        }
+      })
+
+      it("should handle select with male option", () => {
+        const { result } = renderHook(() =>
+          useTranslation({
+            locale: "en",
+            translations: mockTranslations,
+          })
+        )
+
+        expect(result.current.t("gender", { gender: "male" })).toBe("He")
+      })
+
+      it("should handle select with female option", () => {
+        const { result } = renderHook(() =>
+          useTranslation({
+            locale: "en",
+            translations: mockTranslations,
+          })
+        )
+
+        expect(result.current.t("gender", { gender: "female" })).toBe("She")
+      })
+
+      it("should handle select with other option", () => {
+        const { result } = renderHook(() =>
+          useTranslation({
+            locale: "en",
+            translations: mockTranslations,
+          })
+        )
+
+        expect(result.current.t("gender", { gender: "unknown" })).toBe("They")
+      })
+    })
+
+    describe("and using complex ICU syntax", () => {
+      let mockTranslations: LanguageTranslations
+
+      beforeEach(() => {
+        mockTranslations = {
+          en: {
+            notification:
+              "{count, plural, =0 {No notifications} =1 {You have one notification} other {You have # notifications}}",
+          },
+        }
+      })
+
+      it("should handle complex plural with specific values", () => {
+        const { result } = renderHook(() =>
+          useTranslation({
+            locale: "en",
+            translations: mockTranslations,
+          })
+        )
+
+        expect(result.current.t("notification", { count: 0 })).toBe(
+          "No notifications"
+        )
+        expect(result.current.t("notification", { count: 1 })).toBe(
+          "You have one notification"
+        )
+        expect(result.current.t("notification", { count: 5 })).toBe(
+          "You have 5 notifications"
+        )
+      })
+    })
+  })
+
+  describe("when using additional intl formatting functions", () => {
+    let mockTranslations: LanguageTranslations
+
+    beforeEach(() => {
+      mockTranslations = {
+        en: {
+          greeting: "Hello!",
+        },
+      }
+    })
+
+    it("should format lists", () => {
+      const { result } = renderHook(() =>
+        useTranslation({
+          locale: "en",
+          translations: mockTranslations,
+        })
+      )
+
+      const formatted = result.current.intl.formatList([
+        "apple",
+        "banana",
+        "orange",
+      ])
+
+      expect([
+        "apple, banana, and orange",
+        "apple, banana, and orange",
+      ]).toContain(formatted)
+    })
+
+    it("should format display names for languages", () => {
+      const { result } = renderHook(() =>
+        useTranslation({
+          locale: "en",
+          translations: mockTranslations,
+        })
+      )
+
+      const formatted = result.current.intl.formatDisplayName("es", {
+        type: "language",
+      })
+
+      expect(formatted).toBe("Spanish")
+    })
+
+    it("should format display names for countries", () => {
+      const { result } = renderHook(() =>
+        useTranslation({
+          locale: "en",
+          translations: mockTranslations,
+        })
+      )
+
+      const formatted = result.current.intl.formatDisplayName("US", {
+        type: "region",
+      })
+
+      expect(["United States", "US"]).toContain(formatted)
+    })
+  })
 })
