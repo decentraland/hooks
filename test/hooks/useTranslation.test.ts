@@ -42,17 +42,6 @@ describe("useTranslation", () => {
       expect(result.current.locale).toBe("en")
     })
 
-    it("should initialize with loading set to false", () => {
-      const { result } = renderHook(() =>
-        useTranslation({
-          locale: "en",
-          translations: mockTranslations,
-        })
-      )
-
-      expect(result.current.loading).toBe(false)
-    })
-
     it("should initialize with no error", () => {
       const { result } = renderHook(() =>
         useTranslation({

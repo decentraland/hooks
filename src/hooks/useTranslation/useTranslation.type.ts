@@ -7,7 +7,6 @@ type LanguageTranslations = Record<string, Translations>
 type TranslationState<L extends string = string> = {
   locale: L
   translations: LanguageTranslations
-  loading: boolean
   error: string | null
 }
 
@@ -22,14 +21,13 @@ type TranslationResult = {
   intl: IntlShape
   locale: string
   setLocale: (locale: string) => void
-  loading: boolean
   error: string | null
 }
 
 export type {
-  Translations,
   LanguageTranslations,
-  TranslationState,
   TranslationOptions,
   TranslationResult,
+  TranslationState,
+  Translations,
 }

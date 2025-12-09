@@ -1,10 +1,11 @@
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useContext, useMemo, useState } from "react"
 import { createIntl, createIntlCache } from "@formatjs/intl"
 import {
   TranslationOptions,
   TranslationResult,
   TranslationState,
 } from "./useTranslation.type"
+import { TranslationContext } from "../../contexts/translation/TranslationProvider"
 
 // Create a cache for @formatjs/intl to improve performance
 const cache = createIntlCache()
@@ -12,14 +13,19 @@ const cache = createIntlCache()
 /**
  * Hook to manage translations in a React application using @formatjs/intl
  *
- * @param options - Configuration options for translations
- * @param options.locale - The initial locale to use
- * @param options.translations - An object containing all translations for all locales
+ * Can be used in two ways:
+ * 1. With options (standalone mode): Provides translations directly
+ * 2. Without options (context mode): Uses TranslationProvider context
+ *
+ * @param options - Optional configuration options for translations. If not provided, will use TranslationProvider context.
+ * @param options.locale - The initial locale to use (required in standalone mode)
+ * @param options.translations - An object containing all translations for all locales (required in standalone mode)
  * @param options.fallbackLocale - Optional fallback locale if a translation is not found
  *
  * @returns An object with translation utilities including the full IntlShape instance
  *
  * @example
+ * Standalone mode:
  * ```tsx
  * const translations = {
  *   en: {
@@ -48,20 +54,87 @@ const cache = createIntlCache()
  *   )
  * }
  * ```
+ *
+ * @example
+ * Context mode:
+ * ```tsx
+ * function App() {
+ *   return (
+ *     <TranslationProvider
+ *       locale="en"
+ *       translations={{
+ *         en: { greeting: "Hello!" },
+ *         es: { greeting: "Hola!" }
+ *       }}
+ *     >
+ *       <MyComponent />
+ *     </TranslationProvider>
+ *   )
+ * }
+ *
+ * function MyComponent() {
+ *   const { t, locale, setLocale } = useTranslation()
+ *
+ *   return (
+ *     <div>
+ *       <p>{t('greeting')}</p>
+ *       <button onClick={() => setLocale('es')}>Switch to Spanish</button>
+ *     </div>
+ *   )
+ * }
+ * ```
  */
 const useTranslation = <L extends string = string>(
-  options: TranslationOptions<L>
+  options?: Partial<TranslationOptions<L>>
 ): TranslationResult => {
+  const context = useContext(TranslationContext)
+
+  if (!options && !context) {
+    throw new Error(
+      "useTranslation must be used with either options or within a TranslationProvider"
+    )
+  }
+
+  if (!options && context) {
+    return context
+  }
+
+  if (options && !options.locale) {
+    throw new Error("locale is required when using useTranslation with options")
+  }
+
+  if (options && !options.translations) {
+    throw new Error(
+      "translations is required when using useTranslation with options"
+    )
+  }
+
+  const validatedOptions = options as TranslationOptions<L>
   const [state, setState] = useState<TranslationState<L>>({
-    locale: options.locale,
-    translations: options.translations,
-    loading: false,
+    locale: validatedOptions.locale,
+    translations: validatedOptions.translations,
     error: null,
   })
 
   // Create intl instance with current locale and translations
   const intl = useMemo(() => {
     const currentTranslations = state.translations[state.locale]
+    const fallbackTranslations =
+      validatedOptions.fallbackLocale &&
+      state.translations[validatedOptions.fallbackLocale]
+
+    if (!currentTranslations && fallbackTranslations) {
+      console.error(
+        `No translations found for locale "${state.locale}". Using fallback locale "${validatedOptions.fallbackLocale}".`
+      )
+      return createIntl(
+        {
+          locale: state.locale,
+          messages: fallbackTranslations,
+        },
+        cache
+      )
+    }
 
     if (!currentTranslations) {
       console.error(
@@ -76,14 +149,17 @@ const useTranslation = <L extends string = string>(
       )
     }
 
-    // Merge with fallback locale if provided
-    const messages =
-      options.fallbackLocale && state.locale !== options.fallbackLocale
-        ? {
-            ...state.translations[options.fallbackLocale],
-            ...currentTranslations,
-          }
-        : currentTranslations
+    const shouldMergeFallback =
+      validatedOptions.fallbackLocale &&
+      state.locale !== validatedOptions.fallbackLocale &&
+      fallbackTranslations
+
+    const messages = shouldMergeFallback
+      ? {
+          ...fallbackTranslations,
+          ...currentTranslations,
+        }
+      : currentTranslations
 
     return createIntl(
       {
@@ -92,7 +168,7 @@ const useTranslation = <L extends string = string>(
       },
       cache
     )
-  }, [state.locale, state.translations, options.fallbackLocale])
+  }, [state.locale, state.translations, validatedOptions.fallbackLocale])
 
   // Simplified t() function using intl.formatMessage
   const t = useCallback(
@@ -129,7 +205,6 @@ const useTranslation = <L extends string = string>(
     intl,
     locale: state.locale,
     setLocale,
-    loading: state.loading,
     error: state.error,
   }
 }
