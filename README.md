@@ -576,6 +576,108 @@ function MyComponent() {
 }
 ```
 
+Using TranslationProvider for context-based translations:
+
+```typescript
+import { TranslationProvider, useTranslation } from '@dcl/hooks'
+
+const translations = {
+  en: {
+    greeting: 'Hello!',
+    welcome: 'Welcome to our app'
+  },
+  es: {
+    greeting: 'Hola!',
+    welcome: 'Bienvenido a nuestra aplicación'
+  }
+}
+
+function App() {
+  return (
+    <TranslationProvider
+      locale="en"
+      translations={translations}
+      fallbackLocale="en"
+    >
+      <MyComponent />
+    </TranslationProvider>
+  )
+}
+
+function MyComponent() {
+  // Can be used without options when inside TranslationProvider
+  const { t, locale, setLocale } = useTranslation()
+
+  return (
+    <div>
+      <p>{t('greeting')}</p>
+      <p>{t('welcome')}</p>
+      <button onClick={() => setLocale('es')}>
+        Switch to Spanish
+      </button>
+    </div>
+  )
+}
+```
+
+Using ICU Message Syntax:
+
+```typescript
+const translations = {
+  en: {
+    // Pluralization
+    items: '{count, plural, =0 {No items} one {# item} other {# items}}',
+    // Select syntax
+    gender: '{gender, select, male {He} female {She} other {They}}',
+    // Complex ICU
+    notification: '{count, plural, =0 {No notifications} =1 {You have one notification} other {You have # notifications}}'
+  }
+}
+
+function MyComponent() {
+  const { t } = useTranslation({
+    locale: 'en',
+    translations
+  })
+
+  return (
+    <div>
+      <p>{t('items', { count: 0 })}</p> {/* "No items" */}
+      <p>{t('items', { count: 1 })}</p> {/* "1 item" */}
+      <p>{t('items', { count: 5 })}</p> {/* "5 items" */}
+      <p>{t('gender', { gender: 'male' })}</p> {/* "He" */}
+      <p>{t('notification', { count: 3 })}</p> {/* "You have 3 notifications" */}
+    </div>
+  )
+}
+```
+
+Additional intl formatting functions:
+
+```typescript
+function MyComponent() {
+  const { intl } = useTranslation({
+    locale: 'en',
+    translations: { en: {} }
+  })
+
+  return (
+    <div>
+      {/* Format lists */}
+      <p>{intl.formatList(['apple', 'banana', 'orange'])}</p>
+      {/* "apple, banana, and orange" */}
+
+      {/* Format display names */}
+      <p>{intl.formatDisplayName('es', { type: 'language' })}</p>
+      {/* "Spanish" */}
+      
+      <p>{intl.formatDisplayName('US', { type: 'region' })}</p>
+      {/* "United States" */}
+    </div>
+  )
+}
+```
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
