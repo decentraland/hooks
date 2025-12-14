@@ -20,6 +20,7 @@ npm install @dcl/hooks
 - `useAsyncEffect`: Async version of useEffect
 - `useAsyncMemo`: Async version of useMemo
 - `useInfiniteScroll`: Infinite scroll functionality for loading more content
+- `useSEO`: SEO meta tags management with Open Graph and Twitter Cards support
 
 ## Examples
 
@@ -463,6 +464,82 @@ function App() {
   )
 }
 ```
+
+### useSEO
+
+The `useSEO` hook provides SEO meta tags management using `react-helmet`, with full support for Open Graph protocol and Twitter Cards.
+
+> **Note:** This hook requires `react-helmet` as a peer dependency.
+
+#### Basic Usage
+
+```typescript
+import { useSEO } from '@dcl/hooks'
+
+function MyPage() {
+  const { SEO } = useSEO({
+    title: 'My Page Title',
+    description: 'A description of my page for search engines and social sharing'
+  })
+
+  return (
+    <>
+      <SEO />
+      <div>Page content</div>
+    </>
+  )
+}
+```
+
+#### Article with Full Metadata
+
+```typescript
+import { useSEO, OGType } from '@dcl/hooks'
+
+function BlogPost() {
+  const { SEO } = useSEO({
+    title: 'My Blog Post',
+    description: 'An interesting article about Web3',
+    type: OGType.Article,
+    url: 'https://decentraland.org/blog/my-post',
+    image: {
+      url: 'https://decentraland.org/images/post-cover.jpg',
+      width: 1200,
+      height: 630,
+      alt: 'Blog post cover image',
+      type: 'image/jpeg'
+    },
+    author: 'John Doe',
+    publishedTime: '2024-01-15T10:00:00Z',
+    modifiedTime: '2024-01-16T14:30:00Z',
+    section: 'Technology',
+    tags: ['web3', 'metaverse', 'decentraland']
+  })
+
+  return (
+    <>
+      <SEO />
+      <article>Blog post content</article>
+    </>
+  )
+}
+```
+
+#### Available Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `title` | `string` | Page title (defaults to "Decentraland") |
+| `description` | `string` | **Required.** Page description |
+| `image` | `string \| OGImage` | Image URL or structured image object |
+| `type` | `OGType` | Open Graph type (defaults to `OGType.Website`) |
+| `url` | `string` | Canonical URL |
+| `locale` | `string` | Locale (defaults to "en_US") |
+| `author` | `string` | Article author (only for `OGType.Article`) |
+| `publishedTime` | `string` | ISO 8601 publish date (only for articles) |
+| `modifiedTime` | `string` | ISO 8601 modification date (only for articles) |
+| `section` | `string` | Article section (only for articles) |
+| `tags` | `string[]` | Article tags (only for articles) |
 
 ## License
 

@@ -3,6 +3,7 @@ export type { AdvancedNavigatorUAData } from "./useAdvancedUserAgentData"
 export type { AsyncMemoResult, AsyncMemoResultState } from "./useAsyncMemo"
 export type { AsyncStateResult, AsyncStateResultState } from "./useAsyncState"
 export type { UseInfiniteScrollOptions } from "./useInfiniteScroll"
+export type { OGImage, SEOProps } from "./useSEO"
 
 // Hooks
 export { useAdvancedUserAgentData } from "./useAdvancedUserAgentData"
@@ -15,3 +16,4 @@ export { useAsyncTasks } from "./useAsyncTasks"
 export { useInfiniteScroll } from "./useInfiniteScroll"
 export { usePageTracking } from "./usePageTracking"
 export { usePatchState } from "./usePatchState"
+export { useSEO, OGType } from "./useSEO"
