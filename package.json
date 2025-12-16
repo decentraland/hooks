@@ -26,7 +26,7 @@
     "test:coverage": "npm run test -- --coverage"
   },
   "peerDependencies": {
-    "react": "^17.0.0 || ^18.0.0"
+    "react": "^18.0.0"
   },
   "devDependencies": {
     "@dcl/eslint-config": "^2.2.1",
@@ -57,7 +57,7 @@
     "@segment/analytics-next": "^1.79.0",
     "@sentry/browser": "^9.0.0",
     "isbot": "^5.1.25",
-    "ua-parser-js": "^2.0.2"
+    "ua-parser-js": "^2.0.7"
   },
   "keywords": [
     "decentraland",
