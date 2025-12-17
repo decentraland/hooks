@@ -1,10 +1,10 @@
 import { renderHook } from "@testing-library/react/pure"
 import { UAParser } from "ua-parser-js"
-import { isAppleSilicon } from "ua-parser-js/helpers"
+import { isAppleSilicon } from "ua-parser-js/device-detection"
 import { useAdvancedUserAgentData } from "../../src/hooks/useAdvancedUserAgentData"
 
 jest.mock("ua-parser-js")
-jest.mock("ua-parser-js/helpers")
+jest.mock("ua-parser-js/device-detection")
 jest.mock("../__mocks__/sentry")
 
 describe("useAdvancedUserAgentData", () => {

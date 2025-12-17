@@ -1,22 +1,15 @@
 {
   "name": "@dcl/hooks",
   "version": "0.0.0-development",
-  "main": "cjs/index.js",
+  "type": "module",
+  "main": "esm/index.js",
   "module": "esm/index.js",
-  "exports": {
-    ".": {
-      "import": "./esm/index.js",
-      "require": "./cjs/index.js"
-    }
-  },
   "files": [
-    "esm",
-    "cjs"
+    "esm"
   ],
   "scripts": {
-    "build": "npm run build:esm && npm run build:cjs",
+    "build": "npm run build:esm",
     "build:esm": "tsc -p tsconfig.esm.json",
-    "build:cjs": "tsc -p tsconfig.cjs.json",
     "dev": "tsc --watch --outDir dist",
     "format": "prettier --write '**/*.{ts,tsx,js,jsx,json,md,mdx,css}'",
     "lint": "eslint ./src",
@@ -34,6 +27,7 @@
     "@types/jest": "^29.5.12",
     "@types/node": "^18.0.0",
     "@types/react": "^18.0.0",
+    "@types/ua-parser-js": "^0.7.39",
     "@typescript-eslint/eslint-plugin": "^7.15.0",
     "@typescript-eslint/parser": "^7.15.0",
     "eslint": "^8.57.0",
