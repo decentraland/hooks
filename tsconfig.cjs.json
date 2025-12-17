@@ -1,14 +1,10 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "nodenext",
     "outDir": "cjs",
     "target": "es6",
-    "moduleResolution": "node",
-    "baseUrl": ".",
-    "paths": {
-      "ua-parser-js/helpers": ["node_modules/ua-parser-js/src/helpers/ua-parser-helpers"]
-    }
+    "moduleResolution": "nodenext"
   },
   "exclude": ["node_modules", "dist", "esm", "cjs", "test"]
 }
