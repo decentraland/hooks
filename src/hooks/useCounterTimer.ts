@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 
-type UseCounterOptions = {
+type UseCounterTimerOptions = {
   /** Interval in milliseconds between each tick. Default: 1000 */
   interval?: number
   /** Target value to count towards. Default: 0 */
@@ -22,15 +22,15 @@ type UseCounterOptions = {
  *
  * @example
  * // Count down from 10 to 0
- * const { count, start } = useCounter(10);
+ * const { count, start } = useCounterTimer(10);
  *
  * @example
  * // Count up from 50 to 100
- * const { count, start } = useCounter(50, { target: 100 });
+ * const { count, start } = useCounterTimer(50, { target: 100 });
  */
-const useCounter = (
+const useCounterTimer = (
   initialValue: number = 0,
-  options: UseCounterOptions = {}
+  options: UseCounterTimerOptions = {}
 ) => {
   const { interval = 1000, onComplete, target = 0 } = options
   const [count, setCount] = useState(initialValue)
@@ -104,5 +104,5 @@ const useCounter = (
   }
 }
 
-export { useCounter }
-export type { UseCounterOptions }
+export { useCounterTimer }
+export type { UseCounterTimerOptions }

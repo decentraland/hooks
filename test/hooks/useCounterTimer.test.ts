@@ -1,10 +1,10 @@
 import { act, renderHook } from "@testing-library/react/pure"
-import { useCounter } from "../../src/hooks/useCounter"
+import { useCounterTimer } from "../../src/hooks/useCounterTimer"
 
 jest.mock("../__mocks__/sentry")
 jest.useFakeTimers()
 
-describe("useCounter", () => {
+describe("useCounterTimer", () => {
   beforeEach(() => {
     jest.clearAllMocks()
     jest.clearAllTimers()
@@ -16,7 +16,7 @@ describe("useCounter", () => {
 
   describe("counting down", () => {
     it("should count down from initial value to 0 by default", () => {
-      const { result } = renderHook(() => useCounter(5))
+      const { result } = renderHook(() => useCounterTimer(5))
 
       expect(result.current.count).toBe(5)
       expect(result.current.isActive).toBe(false)
@@ -40,7 +40,7 @@ describe("useCounter", () => {
     })
 
     it("should count down to custom target", () => {
-      const { result } = renderHook(() => useCounter(10, { target: 5 }))
+      const { result } = renderHook(() => useCounterTimer(10, { target: 5 }))
 
       act(() => {
         result.current.start()
@@ -57,7 +57,7 @@ describe("useCounter", () => {
 
   describe("counting up", () => {
     it("should count up when target is greater than initial value", () => {
-      const { result } = renderHook(() => useCounter(0, { target: 5 }))
+      const { result } = renderHook(() => useCounterTimer(0, { target: 5 }))
 
       act(() => {
         result.current.start()
@@ -78,7 +78,7 @@ describe("useCounter", () => {
     })
 
     it("should count up from 50 to 100", () => {
-      const { result } = renderHook(() => useCounter(50, { target: 100 }))
+      const { result } = renderHook(() => useCounterTimer(50, { target: 100 }))
 
       act(() => {
         result.current.start()
@@ -95,7 +95,7 @@ describe("useCounter", () => {
 
   describe("start, stop, reset", () => {
     it("should stop counting when stop is called", () => {
-      const { result } = renderHook(() => useCounter(10))
+      const { result } = renderHook(() => useCounterTimer(10))
 
       act(() => {
         result.current.start()
@@ -118,7 +118,7 @@ describe("useCounter", () => {
     })
 
     it("should reset to initial value", () => {
-      const { result } = renderHook(() => useCounter(10))
+      const { result } = renderHook(() => useCounterTimer(10))
 
       act(() => {
         result.current.start()
@@ -138,7 +138,7 @@ describe("useCounter", () => {
     })
 
     it("should reset to custom value", () => {
-      const { result } = renderHook(() => useCounter(10))
+      const { result } = renderHook(() => useCounterTimer(10))
 
       act(() => {
         result.current.start()
@@ -157,7 +157,7 @@ describe("useCounter", () => {
     })
 
     it("should start from a new value", () => {
-      const { result } = renderHook(() => useCounter(10))
+      const { result } = renderHook(() => useCounterTimer(10))
 
       act(() => {
         result.current.start(5)
@@ -177,7 +177,7 @@ describe("useCounter", () => {
     it("should call onComplete when reaching target", () => {
       const onComplete = jest.fn()
       const { result } = renderHook(() =>
-        useCounter(5, { target: 0, onComplete })
+        useCounterTimer(5, { target: 0, onComplete })
       )
 
       act(() => {
@@ -195,7 +195,7 @@ describe("useCounter", () => {
     it("should call onComplete when counting up reaches target", () => {
       const onComplete = jest.fn()
       const { result } = renderHook(() =>
-        useCounter(0, { target: 3, onComplete })
+        useCounterTimer(0, { target: 3, onComplete })
       )
 
       act(() => {
@@ -214,7 +214,7 @@ describe("useCounter", () => {
       const onComplete1 = jest.fn()
       const onComplete2 = jest.fn()
       const { result, rerender } = renderHook(
-        ({ callback }) => useCounter(3, { onComplete: callback }),
+        ({ callback }) => useCounterTimer(3, { onComplete: callback }),
         { initialProps: { callback: onComplete1 } }
       )
 
@@ -235,7 +235,7 @@ describe("useCounter", () => {
 
   describe("custom interval", () => {
     it("should use custom interval", () => {
-      const { result } = renderHook(() => useCounter(5, { interval: 500 }))
+      const { result } = renderHook(() => useCounterTimer(5, { interval: 500 }))
 
       act(() => {
         result.current.start()
@@ -257,7 +257,7 @@ describe("useCounter", () => {
     it("should not start if already at target", () => {
       const onComplete = jest.fn()
       const { result } = renderHook(() =>
-        useCounter(0, { target: 0, onComplete })
+        useCounterTimer(0, { target: 0, onComplete })
       )
 
       act(() => {
@@ -276,7 +276,7 @@ describe("useCounter", () => {
     it("should handle starting with target value", () => {
       const onComplete = jest.fn()
       const { result } = renderHook(() =>
-        useCounter(10, { target: 5, onComplete })
+        useCounterTimer(10, { target: 5, onComplete })
       )
 
       act(() => {
@@ -293,7 +293,7 @@ describe("useCounter", () => {
     })
 
     it("should land exactly on target even with large steps", () => {
-      const { result } = renderHook(() => useCounter(10, { target: 5 }))
+      const { result } = renderHook(() => useCounterTimer(10, { target: 5 }))
 
       act(() => {
         result.current.start()
@@ -309,7 +309,7 @@ describe("useCounter", () => {
 
   describe("cleanup", () => {
     it("should clear interval on unmount", () => {
-      const { result, unmount } = renderHook(() => useCounter(10))
+      const { result, unmount } = renderHook(() => useCounterTimer(10))
 
       act(() => {
         result.current.start()
@@ -326,7 +326,7 @@ describe("useCounter", () => {
 
     it("should clear interval when stopped", () => {
       const clearIntervalSpy = jest.spyOn(global, "clearInterval")
-      const { result } = renderHook(() => useCounter(5))
+      const { result } = renderHook(() => useCounterTimer(5))
 
       act(() => {
         result.current.start()
