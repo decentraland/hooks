@@ -68,19 +68,12 @@ const useCounterTimer = (
 
     const intervalId = setInterval(() => {
       setCount((value) => {
-        const alreadyAtTarget = isCountingUp ? value >= target : value <= target
-        if (alreadyAtTarget) {
-          setIsActive(false)
-          onCompleteRef.current?.()
-          return target
-        }
-
         const newValue = value + step
-        const reachedTarget = isCountingUp
+        const hasReachedTarget = isCountingUp
           ? newValue >= target
           : newValue <= target
 
-        if (reachedTarget) {
+        if (hasReachedTarget) {
           setIsActive(false)
           onCompleteRef.current?.()
           return target
