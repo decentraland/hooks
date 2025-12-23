@@ -20,6 +20,7 @@ npm install @dcl/hooks
 - `useAsyncEffect`: Async version of useEffect
 - `useAsyncMemo`: Async version of useMemo
 - `useInfiniteScroll`: Infinite scroll functionality for loading more content
+- `useTranslation`: Simple and lightweight translation management
 
 ## Examples
 
@@ -460,6 +461,219 @@ function App() {
     >
       <MyPage />
     </AnalyticsProvider>
+  )
+}
+```
+
+### useTranslation
+
+The `useTranslation` hook provides i18n capabilities powered by `@formatjs/intl`, giving you access to advanced formatting functions for numbers, dates, currencies, and more.
+
+Basic usage:
+
+```typescript
+import { useTranslation } from '@dcl/hooks'
+
+const translations = {
+  en: {
+    greeting: 'Hello, {name}!',
+    welcome: 'Welcome to our app',
+    items: '{count, plural, =0 {No items} one {# item} other {# items}}'
+  },
+  es: {
+    greeting: 'Hola, {name}!',
+    welcome: 'Bienvenido a nuestra aplicación',
+    items: '{count, plural, =0 {Sin elementos} one {# elemento} other {# elementos}}'
+  }
+}
+
+function MyComponent() {
+  const { t, intl, locale, setLocale } = useTranslation({
+    locale: 'en',
+    translations
+  })
+
+  return (
+    <div>
+      <p>{t('greeting', { name: 'John' })}</p>
+      <p>{t('items', { count: 5 })}</p>
+      <button onClick={() => setLocale('es')}>
+        Switch to Spanish
+      </button>
+    </div>
+  )
+}
+```
+
+Using the `intl` object for advanced formatting:
+
+```typescript
+function AdvancedFormattingExample() {
+  const { t, intl } = useTranslation({
+    locale: 'en',
+    translations: {
+      en: {
+        product_price: 'Price: {price}'
+      }
+    }
+  })
+
+  return (
+    <div>
+      {/* Format numbers */}
+      <p>Count: {intl.formatNumber(1000)}</p>
+
+      {/* Format dates */}
+      <p>Today: {intl.formatDate(new Date(), {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })}</p>
+
+      {/* Format currency */}
+      <p>{intl.formatNumber(99.99, {
+        style: 'currency',
+        currency: 'USD'
+      })}</p>
+
+      {/* Format relative time */}
+      <p>{intl.formatRelativeTime(-1, 'day')}</p>
+
+      {/* Use formatMessage directly */}
+      <p>{intl.formatMessage({ id: 'product_price' }, { price: '$99' })}</p>
+    </div>
+  )
+}
+```
+
+With fallback locale:
+
+```typescript
+const translations = {
+  en: {
+    greeting: 'Hello!',
+    welcome: 'Welcome!'
+  },
+  es: {
+    greeting: 'Hola!'
+    // 'welcome' is missing in Spanish
+  }
+}
+
+function MyComponent() {
+  const { t } = useTranslation({
+    locale: 'es',
+    translations,
+    fallbackLocale: 'en' // Will use English if translation is missing
+  })
+
+  return (
+    <div>
+      <p>{t('greeting')}</p> {/* Shows: "Hola!" */}
+      <p>{t('welcome')}</p> {/* Shows: "Welcome!" (from fallback) */}
+    </div>
+  )
+}
+```
+
+Using TranslationProvider for context-based translations:
+
+```typescript
+import { TranslationProvider, useTranslation } from '@dcl/hooks'
+
+const translations = {
+  en: {
+    greeting: 'Hello!',
+    welcome: 'Welcome to our app'
+  },
+  es: {
+    greeting: 'Hola!',
+    welcome: 'Bienvenido a nuestra aplicación'
+  }
+}
+
+function App() {
+  return (
+    <TranslationProvider
+      locale="en"
+      translations={translations}
+      fallbackLocale="en"
+    >
+      <MyComponent />
+    </TranslationProvider>
+  )
+}
+
+function MyComponent() {
+  // Can be used without options when inside TranslationProvider
+  const { t, locale, setLocale } = useTranslation()
+
+  return (
+    <div>
+      <p>{t('greeting')}</p>
+      <p>{t('welcome')}</p>
+      <button onClick={() => setLocale('es')}>
+        Switch to Spanish
+      </button>
+    </div>
+  )
+}
+```
+
+Using ICU Message Syntax:
+
+```typescript
+const translations = {
+  en: {
+    // Pluralization
+    items: '{count, plural, =0 {No items} one {# item} other {# items}}',
+    // Select syntax
+    gender: '{gender, select, male {He} female {She} other {They}}',
+    // Complex ICU
+    notification: '{count, plural, =0 {No notifications} =1 {You have one notification} other {You have # notifications}}'
+  }
+}
+
+function MyComponent() {
+  const { t } = useTranslation({
+    locale: 'en',
+    translations
+  })
+
+  return (
+    <div>
+      <p>{t('items', { count: 0 })}</p> {/* "No items" */}
+      <p>{t('items', { count: 1 })}</p> {/* "1 item" */}
+      <p>{t('items', { count: 5 })}</p> {/* "5 items" */}
+      <p>{t('gender', { gender: 'male' })}</p> {/* "He" */}
+      <p>{t('notification', { count: 3 })}</p> {/* "You have 3 notifications" */}
+    </div>
+  )
+}
+```
+
+Additional intl formatting functions:
+
+```typescript
+function MyComponent() {
+  const { intl } = useTranslation({
+    locale: 'en',
+    translations: { en: {} }
+  })
+
+  return (
+    <div>
+      {/* Format lists */}
+      <p>{intl.formatList(['apple', 'banana', 'orange'])}</p>
+      {/* "apple, banana, and orange" */}
+
+      {/* Format display names */}
+      <p>{intl.formatDisplayName('es', { type: 'language' })}</p>
+      {/* "Spanish" */}
+      
+      <p>{intl.formatDisplayName('US', { type: 'region' })}</p>
+      {/* "United States" */}
+    </div>
   )
 }
 ```
