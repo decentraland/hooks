@@ -15,111 +15,103 @@ describe("useCounterTimer", () => {
   })
 
   describe("when initial value is 5 and target is 0", () => {
-    describe("when counting down", () => {
-      it("should count down from 5 to 0", () => {
-        const { result } = renderHook(() => useCounterTimer(5))
+    it("should count down from 5 to 0", () => {
+      const { result } = renderHook(() => useCounterTimer(5))
 
-        expect(result.current.count).toBe(5)
-        expect(result.current.isActive).toBe(false)
+      expect(result.current.count).toBe(5)
+      expect(result.current.isActive).toBe(false)
 
-        act(() => {
-          result.current.start()
-        })
-
-        expect(result.current.isActive).toBe(true)
-
-        act(() => {
-          jest.advanceTimersByTime(1000)
-        })
-        expect(result.current.count).toBe(4)
-
-        act(() => {
-          jest.advanceTimersByTime(4000)
-        })
-        expect(result.current.count).toBe(0)
-        expect(result.current.isActive).toBe(false)
+      act(() => {
+        result.current.start()
       })
 
-      it("should land exactly on target", () => {
-        const { result } = renderHook(() => useCounterTimer(10, { target: 5 }))
+      expect(result.current.isActive).toBe(true)
 
-        act(() => {
-          result.current.start()
-        })
-
-        act(() => {
-          jest.advanceTimersByTime(5000)
-        })
-
-        expect(result.current.count).toBe(5)
+      act(() => {
+        jest.advanceTimersByTime(1000)
       })
+      expect(result.current.count).toBe(4)
+
+      act(() => {
+        jest.advanceTimersByTime(4000)
+      })
+      expect(result.current.count).toBe(0)
+      expect(result.current.isActive).toBe(false)
+    })
+
+    it("should land exactly on target", () => {
+      const { result } = renderHook(() => useCounterTimer(10, { target: 5 }))
+
+      act(() => {
+        result.current.start()
+      })
+
+      act(() => {
+        jest.advanceTimersByTime(5000)
+      })
+
+      expect(result.current.count).toBe(5)
     })
   })
 
   describe("when initial value is 10 and target is 5", () => {
-    describe("when counting down", () => {
-      it("should count down to custom target", () => {
-        const { result } = renderHook(() => useCounterTimer(10, { target: 5 }))
+    it("should count down to custom target", () => {
+      const { result } = renderHook(() => useCounterTimer(10, { target: 5 }))
 
-        act(() => {
-          result.current.start()
-        })
-
-        act(() => {
-          jest.advanceTimersByTime(5000)
-        })
-
-        expect(result.current.count).toBe(5)
-        expect(result.current.isActive).toBe(false)
+      act(() => {
+        result.current.start()
       })
+
+      act(() => {
+        jest.advanceTimersByTime(5000)
+      })
+
+      expect(result.current.count).toBe(5)
+      expect(result.current.isActive).toBe(false)
     })
   })
 
   describe("when initial value is 0 and target is 5", () => {
-    describe("when counting up", () => {
-      it("should count up to target", () => {
-        const { result } = renderHook(() => useCounterTimer(0, { target: 5 }))
+    it("should count up to target", () => {
+      const { result } = renderHook(() => useCounterTimer(0, { target: 5 }))
 
-        act(() => {
-          result.current.start()
-        })
-
-        expect(result.current.isActive).toBe(true)
-
-        act(() => {
-          jest.advanceTimersByTime(1000)
-        })
-        expect(result.current.count).toBe(1)
-
-        act(() => {
-          jest.advanceTimersByTime(4000)
-        })
-        expect(result.current.count).toBe(5)
-        expect(result.current.isActive).toBe(false)
+      act(() => {
+        result.current.start()
       })
+
+      expect(result.current.isActive).toBe(true)
+
+      act(() => {
+        jest.advanceTimersByTime(1000)
+      })
+      expect(result.current.count).toBe(1)
+
+      act(() => {
+        jest.advanceTimersByTime(4000)
+      })
+      expect(result.current.count).toBe(5)
+      expect(result.current.isActive).toBe(false)
     })
   })
 
   describe("when initial value equals target", () => {
-    describe("when starting", () => {
-      it("should not start and call onComplete immediately", () => {
-        const onComplete = jest.fn()
-        const { result } = renderHook(() =>
-          useCounterTimer(0, { target: 0, onComplete })
-        )
+    it("should not start and call onComplete immediately", () => {
+      const onComplete = jest.fn()
+      const { result } = renderHook(() =>
+        useCounterTimer(0, { target: 0, onComplete })
+      )
 
-        act(() => {
-          result.current.start()
-        })
-
-        act(() => {
-          jest.advanceTimersByTime(1000)
-        })
-
-        expect(result.current.count).toBe(0)
-        expect(onComplete).toHaveBeenCalledTimes(1)
-        expect(result.current.isActive).toBe(false)
+      act(() => {
+        result.current.start()
       })
+
+      act(() => {
+        jest.advanceTimersByTime(1000)
+      })
+
+      expect(result.current.count).toBe(0)
+      expect(onComplete).toHaveBeenCalledTimes(1)
+      expect(result.current.isActive).toBe(false)
     })
   })
 
@@ -229,24 +221,22 @@ describe("useCounterTimer", () => {
   })
 
   describe("when onComplete callback is provided", () => {
-    describe("when counting down", () => {
-      it("should call onComplete when reaching target", () => {
-        const onComplete = jest.fn()
-        const { result } = renderHook(() =>
-          useCounterTimer(5, { target: 0, onComplete })
-        )
+    it("should call onComplete when reaching target", () => {
+      const onComplete = jest.fn()
+      const { result } = renderHook(() =>
+        useCounterTimer(5, { target: 0, onComplete })
+      )
 
-        act(() => {
-          result.current.start()
-        })
-
-        act(() => {
-          jest.advanceTimersByTime(5000)
-        })
-
-        expect(result.current.count).toBe(0)
-        expect(onComplete).toHaveBeenCalledTimes(1)
+      act(() => {
+        result.current.start()
       })
+
+      act(() => {
+        jest.advanceTimersByTime(5000)
+      })
+
+      expect(result.current.count).toBe(0)
+      expect(onComplete).toHaveBeenCalledTimes(1)
     })
 
     describe("when counting up", () => {
@@ -319,21 +309,19 @@ describe("useCounterTimer", () => {
   })
 
   describe("cleanup", () => {
-    describe("when unmounting", () => {
-      it("should clear interval", () => {
-        const { result, unmount } = renderHook(() => useCounterTimer(10))
+    it("should clear interval", () => {
+      const { result, unmount } = renderHook(() => useCounterTimer(10))
 
-        act(() => {
-          result.current.start()
-        })
+      act(() => {
+        result.current.start()
+      })
 
-        expect(result.current.isActive).toBe(true)
+      expect(result.current.isActive).toBe(true)
 
-        unmount()
+      unmount()
 
-        act(() => {
-          jest.advanceTimersByTime(5000)
-        })
+      act(() => {
+        jest.advanceTimersByTime(5000)
       })
     })
 
