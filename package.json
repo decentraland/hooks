@@ -48,6 +48,7 @@
     "typescript-eslint": "^7.15.0"
   },
   "dependencies": {
+    "@formatjs/intl": "^3.1.8",
     "@segment/analytics-next": "^1.79.0",
     "@sentry/browser": "^9.0.0",
     "isbot": "^5.1.25",
