@@ -505,6 +505,31 @@ function MyComponent() {
 }
 ```
 
+Nested translations (dot notation):
+
+```typescript
+const translations = {
+  en: {
+    components: {
+      blog: {
+        related_post: {
+          title: 'Related posts'
+        }
+      }
+    }
+  }
+}
+
+function MyComponent() {
+  const { t } = useTranslation({
+    locale: 'en',
+    translations
+  })
+
+  return <p>{t('components.blog.related_post.title')}</p>
+}
+```
+
 Using the `intl` object for advanced formatting:
 
 ```typescript
