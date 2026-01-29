@@ -80,6 +80,83 @@ describe("useTranslation", () => {
     })
   })
 
+  describe("when using nested translations", () => {
+    let mockTranslations: LanguageTranslations
+
+    beforeEach(() => {
+      mockTranslations = {
+        en: {
+          components: {
+            blog: {
+              related_post: {
+                title: "Related posts",
+              },
+            },
+          },
+        },
+        es: {
+          components: {
+            blog: {
+              related_post: {
+                title: "Publicaciones relacionadas",
+              },
+            },
+          },
+        },
+      }
+    })
+
+    it("should return nested translation when using dot notation", () => {
+      const { result } = renderHook(() =>
+        useTranslation({
+          locale: "en",
+          translations: mockTranslations,
+        })
+      )
+
+      expect(result.current.t("components.blog.related_post.title")).toBe(
+        "Related posts"
+      )
+    })
+  })
+
+  describe("when using nested translations with fallback locale", () => {
+    let mockTranslations: LanguageTranslations
+
+    beforeEach(() => {
+      mockTranslations = {
+        en: {
+          components: {
+            blog: {
+              related_post: {
+                title: "Related posts",
+              },
+            },
+          },
+        },
+        es: {
+          components: {
+            blog: {},
+          },
+        },
+      }
+    })
+
+    it("should return fallback translation when nested key is missing", () => {
+      const { result } = renderHook(() =>
+        useTranslation({
+          locale: "es",
+          translations: mockTranslations,
+          fallbackLocale: "en",
+        })
+      )
+
+      expect(result.current.t("components.blog.related_post.title")).toBe(
+        "Related posts"
+      )
+    })
+  })
+
   describe("when translating with interpolation", () => {
     describe("and using a single placeholder", () => {
       let mockTranslations: LanguageTranslations

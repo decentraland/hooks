@@ -4,11 +4,40 @@ import {
   TranslationOptions,
   TranslationResult,
   TranslationState,
+  Translations,
 } from "./useTranslation.type"
 import { TranslationContext } from "../../contexts/translation/TranslationContext"
 
 // Create a cache for @formatjs/intl to improve performance
 const cache = createIntlCache()
+
+type FlatTranslations = Record<string, string>
+
+const flattenTranslations = (
+  translations: Translations,
+  parentKey = "",
+  result: FlatTranslations = {}
+): FlatTranslations => {
+  Object.entries(translations).forEach(([key, value]) => {
+    const translationKey = parentKey ? `${parentKey}.${key}` : key
+
+    if (typeof value === "string") {
+      result[translationKey] = value
+      return
+    }
+
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      flattenTranslations(value as Translations, translationKey, result)
+      return
+    }
+
+    console.error(
+      `Invalid translation value for key "${translationKey}". Expected string or nested object.`
+    )
+  })
+
+  return result
+}
 
 /**
  * Hook to manage translations in a React application using @formatjs/intl
@@ -116,12 +145,22 @@ const useTranslation = <L extends string = string>(
     error: null,
   })
 
+  const flattenedTranslations = useMemo(() => {
+    const locales: Record<string, FlatTranslations> = {}
+
+    Object.entries(state.translations).forEach(([locale, translations]) => {
+      locales[locale] = flattenTranslations(translations)
+    })
+
+    return locales
+  }, [state.translations])
+
   // Create intl instance with current locale and translations
   const intl = useMemo(() => {
-    const currentTranslations = state.translations[state.locale]
+    const currentTranslations = flattenedTranslations[state.locale]
     const fallbackTranslations =
       validatedOptions.fallbackLocale &&
-      state.translations[validatedOptions.fallbackLocale]
+      flattenedTranslations[validatedOptions.fallbackLocale]
 
     if (!currentTranslations && fallbackTranslations) {
       console.error(
@@ -168,7 +207,7 @@ const useTranslation = <L extends string = string>(
       },
       cache
     )
-  }, [state.locale, state.translations, validatedOptions.fallbackLocale])
+  }, [state.locale, flattenedTranslations, validatedOptions.fallbackLocale])
 
   // Simplified t() function using intl.formatMessage
   const t = useCallback(

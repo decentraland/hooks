@@ -1,6 +1,8 @@
 import type { IntlShape } from "@formatjs/intl"
 
-type Translations = Record<string, string>
+interface Translations {
+  [key: string]: string | Translations
+}
 
 type LanguageTranslations = Record<string, Translations>
 
