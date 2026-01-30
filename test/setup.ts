@@ -17,3 +17,7 @@ Object.defineProperty(global, "TextEncoder", {
 Object.defineProperty(global, "TextDecoder", {
   value: MockTextDecoder,
 })
+
+jest.mock("decentraland-crypto-fetch", () =>
+  require("./__mocks__/decentraland-crypto-fetch")
+)

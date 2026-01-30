@@ -21,6 +21,7 @@ npm install @dcl/hooks
 - `useAsyncMemo`: Async version of useMemo
 - `useInfiniteScroll`: Infinite scroll functionality for loading more content
 - `useTranslation`: Simple and lightweight translation management
+- `useNotifications`: Notification polling and modal state management
 
 ## Examples
 
@@ -701,6 +702,100 @@ function MyComponent() {
     </div>
   )
 }
+```
+
+### useNotifications
+
+The `useNotifications` hook manages notification polling, modal state, and onboarding flow. It uses Decentraland's notifications API by default.
+
+Basic usage:
+
+```typescript
+import { useNotifications } from '@dcl/hooks'
+import type { AuthIdentity } from 'decentraland-crypto-fetch'
+
+function NotificationsComponent() {
+  const identity: AuthIdentity = useAuthIdentity() // From your auth context
+
+  const {
+    notifications,
+    isLoading,
+    isModalOpen,
+    isNotificationsOnboarding,
+    handleNotificationsOpen,
+    handleOnBegin
+  } = useNotifications({
+    identity,
+    isNotificationsEnabled: !!identity,
+    notificationsUrl: 'https://notifications.decentraland.org' // or .zone for dev
+  })
+
+  if (isNotificationsOnboarding) {
+    return (
+      <div>
+        <h2>Welcome to Notifications!</h2>
+        <button onClick={handleOnBegin}>Get Started</button>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <button onClick={handleNotificationsOpen}>
+        Notifications ({notifications.filter(n => !n.read).length})
+      </button>
+
+      {isModalOpen && (
+        <ul>
+          {notifications.map(notification => (
+            <li key={notification.id}>
+              {notification.type} - {notification.read ? 'Read' : 'Unread'}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+```
+
+With custom polling interval:
+
+```typescript
+const { notifications } = useNotifications({
+  identity,
+  isNotificationsEnabled: !!identity,
+  notificationsUrl: 'https://notifications.decentraland.org',
+  queryIntervalMs: 30000 // Poll every 30 seconds (default: 60000)
+})
+```
+
+With notification type filtering:
+
+```typescript
+const { notifications } = useNotifications({
+  identity,
+  isNotificationsEnabled: !!identity,
+  notificationsUrl: 'https://notifications.decentraland.org',
+  availableNotificationTypes: ['bid', 'sale', 'royalties']
+})
+```
+
+With error handling:
+
+`onError` is called when fetching fails, marking as read fails, or when
+`notificationsUrl` is missing.
+
+```typescript
+const { notifications } = useNotifications({
+  identity,
+  isNotificationsEnabled: !!identity,
+  notificationsUrl: 'https://notifications.decentraland.org',
+  onError: (error) => {
+    console.error('Notification error:', error)
+    Sentry.captureException(error)
+  }
+})
 ```
 
 ## License

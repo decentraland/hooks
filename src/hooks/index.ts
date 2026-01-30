@@ -4,6 +4,14 @@ export type { AsyncMemoResult, AsyncMemoResultState } from "./useAsyncMemo"
 export type { AsyncStateResult, AsyncStateResultState } from "./useAsyncState"
 export type { UseInfiniteScrollOptions } from "./useInfiniteScroll"
 export type {
+  NotificationItem,
+  NotificationsClient,
+  NotificationsState,
+  NotificationsUIState,
+  UseNotificationsOptions,
+  UseNotificationsResult,
+} from "./useNotifications"
+export type {
   Translations,
   LanguageTranslations,
   TranslationState,
@@ -20,6 +28,11 @@ export { useAsyncState, createAsyncStateState } from "./useAsyncState"
 export { useAsyncTask } from "./useAsyncTask"
 export { useAsyncTasks } from "./useAsyncTasks"
 export { useInfiniteScroll } from "./useInfiniteScroll"
+export {
+  checkIsOnboarding,
+  setOnboardingDone,
+  useNotifications,
+} from "./useNotifications"
 export { usePageTracking } from "./usePageTracking"
 export { usePatchState } from "./usePatchState"
 export { useTranslation } from "./useTranslation"

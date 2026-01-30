@@ -19,6 +19,7 @@
     "test:coverage": "npm run test -- --coverage"
   },
   "peerDependencies": {
+    "decentraland-crypto-fetch": "^2.0.1",
     "react": "^18.0.0"
   },
   "devDependencies": {
@@ -30,6 +31,7 @@
     "@types/ua-parser-js": "^0.7.39",
     "@typescript-eslint/eslint-plugin": "^7.15.0",
     "@typescript-eslint/parser": "^7.15.0",
+    "decentraland-crypto-fetch": "^2.0.1",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-import-resolver-jest": "^3.0.2",
