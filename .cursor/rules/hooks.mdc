@@ -1,353 +1,87 @@
 ---
-description: 
-globs: 
+description: "Standards for implementing and exporting custom hooks in this repository."
+globs: src/hooks/**/*.ts,src/hooks/**/*.tsx
 alwaysApply: true
 ---
 # Custom Hooks Development Standards
 
-## File Structure
+## Scope
+These standards apply to all custom hooks under `src/hooks/`.
 
-### File Organization
+## File Layout (recommended order)
+1. Imports
+2. Types and interfaces
+3. Hook implementation
+4. Exports
+
 ```typescript
-// 1. Imports (ordered)
-import {} from /* core dependencies */ "core"
-import {} from /* utilities */ "../utils"
+import { useCallback, useMemo, useState } from "react"
 
-// 2. Types and Interfaces
-type HookState<T> = {
-  // State definition
-}
-
-type HookOptions = {
-  // Hook options
-}
-
-// 3. Hook Implementation
-/**
- * Hook description
- * @param param1 - Parameter description
- * @returns Return value description
- */
-const useHook = <T>(param1: T, options?: HookOptions) => {
-  // Implementation
-}
-
-// 4. Exports
-export { useHook }
-export type { HookState, HookOptions }
-```
-
-### File Naming
-- Use PascalCase for hook files: `useHook.ts`
-- Use camelCase for utility files: `utils.ts`
-- Index files should be lowercase: `index.ts`
-
-## Type System
-
-### Generic Types
-```typescript
-// ✅ Good
-const useHook = <T, I = null>(
-  callback: () => Promise<T>,
-  options?: HookOptions<T, I>
-) => {
-  // Implementation
-}
-
-// ❌ Bad
-const useHook = (callback: () => Promise<any>) => {
-  // Implementation
-}
-```
-
-### Type Definitions
-```typescript
-// State types should be explicit
 type HookState<T> = {
   data: T | null
   loading: boolean
   error: Error | null
-  version: number
 }
 
-// Options should be partial and documented
-type HookOptions = {
+type HookOptions<T> = {
   initialValue?: T
   onError?: (error: Error) => void
-  // Add framework-specific options as needed
 }
+
+const useThing = <T>(options?: HookOptions<T>) => {
+  const [state, setState] = useState<HookState<T>>({
+    data: null,
+    loading: false,
+    error: null,
+  })
+
+  const setLoading = useCallback(() => {
+    setState((prev) => ({ ...prev, loading: true }))
+  }, [])
+
+  const value = useMemo(() => state.data, [state.data])
+
+  return { ...state, value, setLoading }
+}
+
+export { useThing }
+export type { HookState, HookOptions }
 ```
+
+## Types
+- Prefer explicit types; avoid `any`.
+- Use generics for data and results.
+- Name types with `State`, `Options`, `Result` suffixes.
 
 ## State Management
+- Prefer a single state object for related values.
+- Use functional updates (`setState((prev) => ...)`).
 
-### State Initialization
-```typescript
-// ✅ Good
-const [state, setState] = useState<HookState<T>>({
-  data: null,
-  loading: false,
-  error: null,
-  version: 0,
-})
+## Async Effects
+- Guard against updates after unmount (cancellation flag).
+- Normalize unknown errors to `Error` before storing.
 
-// ❌ Bad
-const [data, setData] = useState(null)
-const [loading, setLoading] = useState(false)
-```
+## Performance
+- Use `useCallback` for stable handlers.
+- Use `useMemo` for expensive derived values.
+- Dependency arrays must be complete.
 
-### State Updates
-```typescript
-// ✅ Good
-setState((prev) => ({
-  ...prev,
-  loading: true,
-  version: prev.version + 1,
-}))
-
-// ❌ Bad
-setState({
-  ...state,
-  loading: true,
-})
-```
-
-## Performance Optimizations
-
-### Function Memoization
-```typescript
-// ✅ Good
-const handler = useCallback(
-  (value: T) => {
-    // Implementation
-  },
-  [
-    /* dependencies */
-  ]
-)
-
-// ❌ Bad
-const handler = (value: T) => {
-  // Implementation
-}
-```
-
-### Value Memoization
-```typescript
-// ✅ Good
-const memoizedValue = useMemo(() => {
-  return expensiveComputation(value)
-}, [value])
-
-// ❌ Bad
-const value = expensiveComputation(props.value)
-```
-
-## Async Operations
-
-### Async Effect Pattern
-```typescript
-useEffect(
-  () => {
-    let cancelled = false
-
-    const asyncOperation = async () => {
-      try {
-        setState((prev) => ({ ...prev, loading: true }))
-        const result = await operation()
-
-        if (cancelled) return
-
-        setState((prev) => ({
-          ...prev,
-          data: result,
-          loading: false,
-        }))
-      } catch (error) {
-        if (cancelled) return
-
-        setState((prev) => ({
-          ...prev,
-          error: error instanceof Error ? error : new Error("Unknown error"),
-          loading: false,
-        }))
-      }
-    }
-
-    asyncOperation()
-
-    return () => {
-      cancelled = true
-    }
-  },
-  [
-    /* dependencies */
-  ]
-)
-```
-
-### Promise Handling
-```typescript
-// ✅ Good
-Promise.resolve()
-  .then(() => operation())
-  .then((result) => {
-    if (cancelled) return
-    // Handle success
-  })
-  .catch((error) => {
-    if (cancelled) return
-    // Handle error
-  })
-
-// ❌ Bad
-operation()
-  .then((result) => {
-    // Handle success
-  })
-  .catch((error) => {
-    // Handle error
-  })
-```
-
-## Error Handling
-
-### Error Management
-```typescript
-try {
-  // Operation
-} catch (error) {
-  console.error(error)
-  // Use your preferred error tracking service
-  errorTracker.captureException(error)
-
-  setState((prev) => ({
-    ...prev,
-    error: error instanceof Error ? error : new Error("Unknown error"),
-    loading: false,
-  }))
-}
-```
-
-### Error Types
-```typescript
-type HookError = {
-  code: string
-  message: string
-  details?: unknown
-}
-
-const handleError = (error: unknown): HookError => {
-  if (error instanceof Error) {
-    return {
-      code: "UNKNOWN_ERROR",
-      message: error.message,
-    }
-  }
-  return {
-    code: "UNKNOWN_ERROR",
-    message: "An unknown error occurred",
-  }
-}
-```
-
-## Naming Conventions
-
-### Hook Names
-- Prefix all hooks with `use`: `useAsyncState`, `usePatchState`
-- Use descriptive names that indicate functionality
-- Avoid abbreviations unless widely understood
-- Framework-specific hooks should indicate their framework: `useReactHook`, `useVueHook`
-
-### Type Names
-- Suffix state types with `State`: `HookState`
-- Suffix option types with `Options`: `HookOptions`
-- Suffix result types with `Result`: `HookResult`
-- Framework-specific types should indicate their framework: `ReactHookState`, `VueHookState`
-
-### Variable Names
-- Use camelCase for variables and functions
-- Use PascalCase for types and interfaces
-- Use UPPER_CASE for constants
-- Framework-specific variables should indicate their framework: `reactState`, `vueState`
+## Naming
+- Hooks must start with `use`.
+- Types: PascalCase. Variables/functions: camelCase. Constants: UPPER_CASE.
 
 ## Documentation
-
-### JSDoc Comments
-```typescript
-/**
- * Hook description
- *
- * @template T - Type of the data being managed
- * @param callback - Async function to execute
- * @param deps - Dependencies array
- * @param options - Optional configuration
- * @returns Tuple containing [state, actions]
- *
- * @example
- * ```ts
- * const [state, actions] = useHook(async () => {
- *   return await fetchData()
- * })
- * ```
- * 
- * @framework React/Vue/etc
- * @version 1.0.0
- */
-```
-
-### Inline Documentation
-```typescript
-// Document complex logic
-const processData = (data: T) => {
-  // Step 1: Validate input
-  if (!isValid(data)) {
-    throw new Error("Invalid data")
-  }
-
-  // Step 2: Transform data
-  const transformed = transform(data)
-
-  // Step 3: Return result
-  return transformed
-}
-```
+- Public hooks require JSDoc with `@param` and `@returns`.
+- Keep examples short and focused.
 
 ## Exports
+- Use named exports only.
+- Export the hook and all public types.
+- Re-export from `src/hooks/index.ts`.
 
-### Index File Structure
-```typescript
-// Types
-export type { HookState, HookOptions } from "./useHook"
-
-// Hooks
-export { useHook } from "./useHook"
-
-// Utilities
-export { createHookState } from "./utils"
-
-// Framework-specific exports
-export { useReactHook } from "./react/useHook"
-export { useVueHook } from "./vue/useHook"
-```
-
-### Export Rules
-- Export all public types
-- Export all hooks
-- Export utility functions that are part of the public API
-- Use named exports instead of default exports
-- Group framework-specific exports in subdirectories
-- Include framework information in exports when relevant
-
-
-## Code Review Checklist
-- [ ] Follows hook rules
-- [ ] Properly typed
-- [ ] Well documented
-- [ ] Includes tests
-- [ ] Handles errors
-- [ ] Performance considered
-- [ ] Security considered
-- [ ] Accessibility considered
-- [ ] Framework compatibility considered
-- [ ] Cross-framework testing when applicable
-
+## Review Checklist (short)
+- Types are explicit and correct.
+- Errors are handled and normalized.
+- Tests exist for behavior.
+- Performance and deps are considered.
+- Docs are present for public hooks.

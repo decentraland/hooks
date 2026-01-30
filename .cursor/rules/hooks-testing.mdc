@@ -1,230 +1,67 @@
 ---
-description: 
-globs: 
+description: "Testing standards for custom hooks in this repository."
+globs: test/hooks/**/*.test.ts,test/hooks/**/*.test.tsx
 alwaysApply: true
 ---
 # Testing Standards for Custom Hooks
 
-## Language and Documentation
+## Language
+- Tests, descriptions, and mock data must be in English.
+- `it` descriptions follow: "should [expected behavior] when [condition]".
+- No JSDoc in test files. Comments only if required for complex logic.
 
-### Test Language
-- All test files must be written in English
-- Test descriptions must follow the pattern: "should [expected behavior] when [condition]"
-- Error messages and mock data must be in English
-- No inline comments in test files unless absolutely necessary for complex logic
-- No JSDoc comments in test files
+## Location and Naming
+- Tests live in `test/hooks/`.
+- File name: `[hook-name].test.ts` or `[hook-name].test.tsx`.
 
-## Directory Structure
+## Structure
+- Use `describe` for contexts and `it` for behaviors.
+- Use `beforeEach` for setup and `afterEach` for cleanup.
+- Use `renderHook` and wrap state changes with `act`.
 
-### Test Organization
-- Unit tests must be placed in `test/hooks/`
-- Test utilities and mocks in `test/__mocks__/`
-- Test types in `test/types/`
-- NEVER place test files alongside source files
-
-### File Naming
-- Test files: `[hook-name].test.ts`
-- Mock files: `[mock-name].ts`
-- Test utility files: `[utility-name].ts`
-
-## Test Structure
-
-### Basic Structure
 ```typescript
 import { act, renderHook } from "@testing-library/react/pure"
 import { useHook } from "../../src/hooks/useHook"
-
-jest.mock("../__mocks__/sentry") // Si es necesario
 
 describe("useHook", () => {
   beforeEach(() => {
     jest.clearAllMocks()
   })
 
-  describe("when [initial state]", () => {
-    it("should [expected behavior]", () => {
-      const { result } = renderHook(() => useHook())
-      expect(result.current).toEqual(expectedValue)
+  it("should return initial state when initialized", () => {
+    const { result } = renderHook(() => useHook())
+    expect(result.current).toEqual(expectedValue)
+  })
+
+  it("should update state when action is called", () => {
+    const { result } = renderHook(() => useHook())
+
+    act(() => {
+      // perform action
     })
-  })
 
-  describe("when [action]", () => {
-    it("should [expected behavior]", async () => {
-      const { result } = renderHook(() => useHook())
-      
-      act(() => {
-        // Perform action
-      })
-
-      expect(result.current).toEqual(expectedValue)
-    })
-  })
-
-  describe("when [error condition]", () => {
-    it("should [handle error]", async () => {
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation()
-      // Test implementation
-      consoleErrorSpy.mockRestore()
-    })
+    expect(result.current).toEqual(expectedValue)
   })
 })
 ```
 
-### Async Hook Testing
-```typescript
-describe("useAsyncHook", () => {
-  it("should handle loading state", async () => {
-    const { result } = renderHook(() => useAsyncHook())
-    expect(result.current.loading).toBe(true)
-    await new Promise((resolve) => setTimeout(resolve, 100))
-    expect(result.current.loading).toBe(false)
-  })
+## Async Testing
+- Test loading, success, and error states.
+- Clean up async operations and mocks.
+- Avoid fixed timeouts when possible; prefer explicit waits for state changes.
 
-  it("should handle success state", async () => {
-    const mockData = { test: "data" }
-    const mockCallback = jest.fn().mockResolvedValue(mockData)
-    const { result } = renderHook(() => useAsyncHook(mockCallback))
-    
-    await new Promise((resolve) => setTimeout(resolve, 100))
-    expect(result.current.data).toEqual(mockData)
-  })
+## Mocking
+- Use `jest.fn()` and verify calls.
+- Reset and restore mocks in `afterEach`.
 
-  it("should handle error state", async () => {
-    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation()
-    const mockError = new Error("Test error")
-    const mockCallback = jest.fn().mockRejectedValue(mockError)
-    const { result } = renderHook(() => useAsyncHook(mockCallback))
-    
-    await new Promise((resolve) => setTimeout(resolve, 100))
-    expect(result.current.error).toBe(mockError)
-    consoleErrorSpy.mockRestore()
-  })
-})
-```
-
-## Testing Patterns
-
-### State Management
-- Test initial state
-- Test state updates
-- Test state persistence
-- Test state cleanup
-
-### Async Operations
-- Test loading states
-- Test success states
-- Test error states
-- Test cancellation
-- Test cleanup
-
-### Dependencies
-- Test dependency changes
-- Test dependency cleanup
-- Test memoization
-
-### Error Handling
-- Test error states
-- Test error recovery
-- Test error logging
-- Test error boundaries
-
-## Mocking Guidelines
-
-### Mock Setup
-```typescript
-const mockCallback = jest.fn().mockResolvedValue(mockData)
-const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation()
-
-beforeEach(() => {
-  jest.clearAllMocks()
-})
-
-afterEach(() => {
-  consoleErrorSpy.mockRestore()
-})
-```
-
-### Mock Verification
-```typescript
-expect(mockCallback).toHaveBeenCalledWith(expectedArgs)
-expect(mockCallback).toHaveBeenCalledTimes(expectedCalls)
-expect(consoleErrorSpy).toHaveBeenCalledWith(expectedError)
-```
-
-## Test Coverage Requirements
-
-### Required Test Cases
-1. Initial state
-2. State updates
-3. Async operations
-4. Error handling
-5. Cleanup
-6. Dependencies
-7. Edge cases
-
-### Coverage Thresholds
+## Coverage Thresholds
 - Statements: 90%
 - Branches: 85%
 - Functions: 90%
 - Lines: 90%
 
-## Best Practices
-
-### Test Organization
-- Group related tests using `describe` blocks
-- Use clear, descriptive test names
-- Follow the pattern: "should [expected behavior] when [condition]"
-- Keep tests focused and atomic
-
-### Async Testing
-- Use `act` for state updates
-- Handle promises properly
-- Clean up async operations
-- Test loading states
-- Test error states
-
-### Error Handling
-- Mock console.error
-- Test error states
-- Verify error messages
-- Clean up error mocks
-
-### Cleanup
-- Reset mocks after each test
-- Clean up async operations
-- Restore console mocks
-- Unmount hooks when needed
-
-## Anti-patterns to Avoid
-
-1. **Test Structure**
-   - ❌ Large test files without clear organization
-   - ❌ Missing setup/teardown
-   - ❌ Not cleaning up mocks
-   - ❌ Not handling async operations properly
-
-2. **Test Quality**
-   - ❌ Testing implementation details
-   - ❌ Not testing error cases
-   - ❌ Inconsistent naming
-   - ❌ Missing assertions
-   - ❌ Not verifying mock calls
-
-3. **Async Testing**
-   - ❌ Not using `act`
-   - ❌ Not handling promises
-   - ❌ Not cleaning up async operations
-   - ❌ Not testing loading states
-
-4. **Mocking**
-   - ❌ Not resetting mocks
-   - ❌ Not verifying mock calls
-   - ❌ Not cleaning up mocks
-   - ❌ Mocking too much or too little
-
-5. **Error Handling**
-   - ❌ Not mocking console.error
-   - ❌ Not testing error states
-   - ❌ Not verifying error messages
-   - ❌ Not cleaning up error mocks
-
+## Anti-patterns
+- Testing implementation details instead of behavior.
+- Missing assertions.
+- Not cleaning up mocks or async effects.
+- Inconsistent test naming.
