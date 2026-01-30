@@ -18,10 +18,6 @@ Object.defineProperty(global, "TextDecoder", {
   value: MockTextDecoder,
 })
 
-jest.mock("decentraland-crypto-fetch", () => ({
-  signedFetchFactory: () =>
-    jest.fn().mockResolvedValue({
-      ok: true,
-      json: jest.fn().mockResolvedValue({ notifications: [] }),
-    }),
-}))
+jest.mock("decentraland-crypto-fetch", () =>
+  require("./__mocks__/decentraland-crypto-fetch")
+)
