@@ -6,7 +6,7 @@ const usePageTracking = (path: string) => {
 
   useEffect(() => {
     page(path)
-  }, [page])
+  }, [page, path])
 }
 
 export { usePageTracking }
