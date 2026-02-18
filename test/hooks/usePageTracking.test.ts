@@ -1,12 +1,11 @@
 import { act, renderHook } from "@testing-library/react/pure"
-import { AnalyticsProvider } from "../../src/contexts/analytics/AnalyticsProvider"
 import { usePageTracking } from "../../src/hooks/usePageTracking"
 
 jest.mock("../../src/hooks/useAnalytics", () => {
   const mock = {
-    page: jest.fn().mockImplementation(() => Promise.resolve()),
-    track: jest.fn().mockImplementation(() => Promise.resolve()),
-    identify: jest.fn().mockImplementation(() => Promise.resolve()),
+    page: jest.fn(),
+    track: jest.fn(),
+    identify: jest.fn(),
     isInitialized: true,
   }
   return {
@@ -14,56 +13,26 @@ jest.mock("../../src/hooks/useAnalytics", () => {
   }
 })
 
-jest.mock("@segment/analytics-next", () => ({
-  AnalyticsBrowser: {
-    load: jest.fn().mockResolvedValue({
-      track: jest.fn(),
-      identify: jest.fn(),
-      page: jest.fn(),
-    }),
-  },
-}))
-
-jest.mock("isbot", () => ({
-  isbot: jest.fn().mockReturnValue(false),
-}))
-
 const mockAnalytics = jest
   .requireMock("../../src/hooks/useAnalytics")
   .useAnalytics()
 
+const renderPageTracking = (path: string) =>
+  renderHook(({ path }) => usePageTracking(path), {
+    initialProps: { path },
+  })
+
 describe("usePageTracking", () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    Object.defineProperty(window, "location", {
-      value: {
-        pathname: "/initial",
-      },
-      writable: true,
-    })
   })
 
   describe("when mounted", () => {
     let initialPath: string
 
-    beforeEach(() => {
-      initialPath = "/initial"
-      Object.defineProperty(window, "location", {
-        value: {
-          pathname: initialPath,
-        },
-        writable: true,
-      })
-    })
-
     beforeEach(async () => {
-      renderHook(() => usePageTracking(initialPath), {
-        wrapper: ({ children }) =>
-          AnalyticsProvider({
-            writeKey: "test-key",
-            children,
-          }),
-      })
+      initialPath = "/initial"
+      renderPageTracking(initialPath)
       await act(async () => {
         await new Promise((resolve) => setTimeout(resolve, 0))
       })
@@ -72,41 +41,57 @@ describe("usePageTracking", () => {
     it("should track initial page view", () => {
       expect(mockAnalytics.page).toHaveBeenCalledWith(initialPath)
     })
+
+    it("should track page view only once", () => {
+      expect(mockAnalytics.page).toHaveBeenCalledTimes(1)
+    })
   })
 
-  describe("when analytics is not initialized", () => {
+  describe("when the path changes", () => {
     let initialPath: string
-
-    beforeEach(() => {
-      initialPath = "/initial"
-      mockAnalytics.isInitialized = false
-      Object.defineProperty(window, "location", {
-        value: {
-          pathname: initialPath,
-        },
-        writable: true,
-      })
-    })
+    let newPath: string
 
     beforeEach(async () => {
-      renderHook(() => usePageTracking(initialPath), {
-        wrapper: ({ children }) =>
-          AnalyticsProvider({
-            writeKey: "test-key",
-            children,
-          }),
+      initialPath = "/initial"
+      newPath = "/new-page"
+      const { rerender } = renderPageTracking(initialPath)
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0))
       })
+      jest.clearAllMocks()
+      rerender({ path: newPath })
       await act(async () => {
         await new Promise((resolve) => setTimeout(resolve, 0))
       })
     })
 
-    afterEach(() => {
-      mockAnalytics.isInitialized = true
+    it("should track the new page view", () => {
+      expect(mockAnalytics.page).toHaveBeenCalledWith(newPath)
     })
 
-    it("should not track page view", () => {
-      expect(mockAnalytics.page).not.toBeInstanceOf(Promise)
+    it("should track page view only once after the change", () => {
+      expect(mockAnalytics.page).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe("when the path does not change on rerender", () => {
+    let initialPath: string
+
+    beforeEach(async () => {
+      initialPath = "/same-page"
+      const { rerender } = renderPageTracking(initialPath)
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      })
+      jest.clearAllMocks()
+      rerender({ path: initialPath })
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      })
+    })
+
+    it("should not track page view again", () => {
+      expect(mockAnalytics.page).not.toHaveBeenCalled()
     })
   })
 })
