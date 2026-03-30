@@ -22,12 +22,12 @@ export function useAdvancedUserAgentData(): [
   AdvancedNavigatorUAData | undefined,
 ] {
   const [isLoading, setLoading] = useState(!_cacheResolved)
-  const [data, setData] = useState<AdvancedNavigatorUAData>(_cachedData)
+  const [data, setData] = useState<AdvancedNavigatorUAData | undefined>(_cachedData)
 
   useAsyncEffect(async () => {
-    if (_cacheResolved && _cachedData) {
-      setData(_cachedData)
-      setLoading(false)
+    // useState initializers already picked up the cached values,
+    // so no setter calls needed — just skip the async work.
+    if (_cacheResolved) {
       return
     }
 
