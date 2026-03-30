@@ -2,6 +2,7 @@ import { renderHook } from "@testing-library/react/pure"
 import { UAParser } from "ua-parser-js"
 import { isAppleSilicon } from "ua-parser-js/device-detection"
 import { useAdvancedUserAgentData } from "../../src/hooks/useAdvancedUserAgentData"
+import { resetUserAgentCache } from "../../src/hooks/useAdvancedUserAgentData/useAdvancedUserAgentData"
 
 jest.mock("ua-parser-js")
 jest.mock("ua-parser-js/device-detection")
@@ -17,6 +18,7 @@ describe("useAdvancedUserAgentData", () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    resetUserAgentCache()
     ;(UAParser as unknown as jest.Mock).mockImplementation(() => mockUAParser)
     ;(isAppleSilicon as jest.Mock).mockReturnValue(false)
   })
