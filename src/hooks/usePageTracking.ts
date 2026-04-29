@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react"
+import { useEffect, useRef } from "react"
 import { useAnalytics } from "./useAnalytics"
 
 type PageTrackingProperties = Record<string, unknown>
@@ -32,14 +32,13 @@ function usePageTracking(
   properties?: PageTrackingProperties
 ) {
   const { isInitialized, page } = useAnalytics()
-  const propertiesKey = useMemo(
-    () => (properties ? JSON.stringify(properties) : ""),
-    [properties]
-  )
+  const propertiesKey = properties ? JSON.stringify(properties) : ""
+  const propertiesRef = useRef(properties)
+  propertiesRef.current = properties
 
   useEffect(() => {
     if (!isInitialized || !name) return
-    page(name, properties)
+    page(name, propertiesRef.current)
   }, [isInitialized, name, propertiesKey, page])
 }
 

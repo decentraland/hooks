@@ -196,7 +196,7 @@ describe("usePageTracking", () => {
     })
   })
 
-  describe("when name is provided later (analytics initializes after mount)", () => {
+  describe("when name resolves from undefined (analytics already initialized)", () => {
     beforeEach(async () => {
       useAnalyticsMock.mockReturnValue({
         ...mockAnalytics,
@@ -214,6 +214,47 @@ describe("usePageTracking", () => {
     it("should fire page() once name resolves", () => {
       expect(mockAnalytics.page).toHaveBeenCalledWith("Post", {
         title: "Hello",
+      })
+    })
+  })
+
+  describe("when analytics initializes after mount with name already set", () => {
+    let rerender: ReturnType<
+      typeof renderPageTrackingWithProperties
+    >["rerender"]
+
+    beforeEach(async () => {
+      useAnalyticsMock.mockReturnValue({
+        ...mockAnalytics,
+        isInitialized: false,
+      })
+      const result = renderPageTrackingWithProperties("Post", {
+        title: "Hello",
+      })
+      rerender = result.rerender
+      await flushEffects()
+    })
+
+    it("should not fire page() while analytics is uninitialized", () => {
+      expect(mockAnalytics.page).not.toHaveBeenCalled()
+    })
+
+    describe("and then analytics becomes initialized", () => {
+      beforeEach(async () => {
+        jest.clearAllMocks()
+        useAnalyticsMock.mockReturnValue({
+          ...mockAnalytics,
+          isInitialized: true,
+        })
+        rerender({ name: "Post", properties: { title: "Hello" } })
+        await flushEffects()
+      })
+
+      it("should fire page() once with the pending name and properties", () => {
+        expect(mockAnalytics.page).toHaveBeenCalledTimes(1)
+        expect(mockAnalytics.page).toHaveBeenCalledWith("Post", {
+          title: "Hello",
+        })
       })
     })
   })
