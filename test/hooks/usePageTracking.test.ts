@@ -250,11 +250,14 @@ describe("usePageTracking", () => {
         await flushEffects()
       })
 
-      it("should fire page() once with the pending name and properties", () => {
-        expect(mockAnalytics.page).toHaveBeenCalledTimes(1)
+      it("should fire page() with the pending name and properties", () => {
         expect(mockAnalytics.page).toHaveBeenCalledWith("Post", {
           title: "Hello",
         })
+      })
+
+      it("should fire page() only once after analytics initializes", () => {
+        expect(mockAnalytics.page).toHaveBeenCalledTimes(1)
       })
     })
   })
