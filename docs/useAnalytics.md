@@ -120,15 +120,28 @@ function MyPage() {
 
 ## usePageTracking
 
-Automatically tracks page views when the provided path changes.
+Automatically tracks page views. Two call shapes:
+
+1. `usePageTracking(path)` — fires `page(path)` whenever `path` changes.
+2. `usePageTracking(name, properties)` — fires `page(name, properties)` only after analytics is initialized AND `name` is a non-empty string. Use this when the page title is resolved asynchronously (e.g. from a CMS via Helmet + RTK Query) so the event lands AFTER `document.title` updates, avoiding the SPA race that otherwise lets Segment auto-capture the previous route's title.
 
 ### Signature
 
 ```typescript
 function usePageTracking(path: string): void
+function usePageTracking(
+  name: string | undefined,
+  properties?: Record<string, unknown>
+): void
 ```
 
-### Example
+### Behavior
+
+- Skips the call when `useAnalytics().isInitialized` is `false` (no wasted work while Segment is still loading).
+- Skips the call when `name` is `undefined` or an empty string — useful while async data resolves.
+- Re-fires when `name` or properties change; deduplicates identical re-renders.
+
+### Example — path-only
 
 ```typescript
 import { usePageTracking } from "@dcl/hooks"
@@ -141,20 +154,21 @@ function PageTracker() {
 }
 ```
 
-Or inside a page component:
+### Example — name + properties (async title)
 
 ```typescript
-function MyPage() {
-  const location = useLocation()
-  usePageTracking(location.pathname)
-
-  return (
-    <div>
-      <h1>My Page</h1>
-    </div>
-  )
+function PostPage() {
+  const { data: post } = useGetBlogPostQuery(slug)
+  usePageTracking(post?.title, {
+    title: post?.title,
+    slug: post?.slug,
+    category: post?.category,
+  })
+  return <article>{/* ... */}</article>
 }
 ```
+
+The hook waits for `post?.title` to resolve before firing — `properties.title` will reflect the resolved title, not whatever `document.title` happened to hold during the SPA navigation.
 
 ---
 
