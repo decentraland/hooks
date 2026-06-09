@@ -12,23 +12,22 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       id-token: write
     name: Deploy
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v6
 
-      - name: Use Node.js 20.x
-        uses: actions/setup-node@v1
+      - name: Use Node.js 24
+        uses: actions/setup-node@v6
         with:
           node-version: 24
 
       - name: Set package.json version
-        uses: decentraland/oddish-action@master
+        uses: decentraland/oddish-action@0074f2d535c43b5c83f136525304a6277166d77f # @master
         with:
           deterministic-snapshot: true
           only-update-versions: true
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Install
         run: npm ci
@@ -36,9 +35,7 @@ jobs:
       - run: npm run build
 
       - name: Publish
-        uses: decentraland/oddish-action@master
+        uses: decentraland/oddish-action@0074f2d535c43b5c83f136525304a6277166d77f # @master
         with:
           access: public
           provenance: true
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
