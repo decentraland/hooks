@@ -232,13 +232,17 @@ Context provider for Segment analytics. Wrap your app with this to enable `useAn
 
 ```typescript
 <AnalyticsProvider
-  writeKey="SEGMENT_WRITE_KEY"  // required
-  userId="user-123"             // optional
-  traits={{ name: "John" }}     // optional
+  writeKey="SEGMENT_WRITE_KEY"           // required
+  userId="user-123"                      // optional
+  traits={{ name: "John" }}              // optional
+  cdnUrl="https://analytics.example.org" // optional -- first party origin for settings and remote plugins
+  apiHost="analytics.example.org/v1"     // optional -- first party host for event delivery, no protocol
 >
   {children}
 </AnalyticsProvider>
 ```
+
+**Gotchas**: `cdnUrl` and `apiHost` serve Segment from a first party proxy, since ad blockers drop `cdn.segment.com` and `api.segment.io`. They are independent, so configure only the one the proxy serves. Values that are not valid https urls (or the app's own origin) are ignored with a warning and fall back to Segment's own endpoints.
 
 ---
 
