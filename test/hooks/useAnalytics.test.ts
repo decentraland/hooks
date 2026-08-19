@@ -1,4 +1,5 @@
-import { act, renderHook } from "@testing-library/react/pure"
+import React from "react"
+import { act, render, renderHook } from "@testing-library/react/pure"
 import { AnalyticsProvider } from "../../src/contexts/analytics/AnalyticsProvider"
 import { useAnalytics } from "../../src/hooks/useAnalytics"
 import type { AnalyticsContextType } from "../../src/contexts/analytics/types"
@@ -188,6 +189,63 @@ describe("useAnalytics", () => {
         { writeKey: mockWriteKey },
         {}
       )
+    })
+  })
+
+  describe("when the configuration changes after analytics loaded", () => {
+    const { AnalyticsBrowser } = jest.requireMock("@segment/analytics-next")
+    let loaded: { track: jest.Mock }[]
+    let analytics: AnalyticsContextType
+
+    // Probe that exposes the context value of whichever provider is mounted
+    const probe = () => {
+      analytics = useAnalytics()
+      return null
+    }
+
+    const renderWithCdnUrl = (cdnUrl: string) =>
+      React.createElement(AnalyticsProvider, {
+        writeKey: mockWriteKey,
+        cdnUrl,
+        children: React.createElement(probe),
+      })
+
+    beforeEach(async () => {
+      loaded = []
+      AnalyticsBrowser.load.mockImplementation(() => {
+        const instance = {
+          track: jest.fn().mockImplementation(() => Promise.resolve()),
+          identify: jest.fn().mockImplementation(() => Promise.resolve()),
+          page: jest.fn().mockImplementation(() => Promise.resolve()),
+        }
+        loaded.push(instance)
+        return instance
+      })
+
+      const { rerender } = render(renderWithCdnUrl("https://one.example.com"))
+      await act(async () => {})
+
+      rerender(renderWithCdnUrl("https://two.example.com"))
+      await act(async () => {})
+    })
+
+    afterEach(() => {
+      AnalyticsBrowser.load.mockReturnValue(mockAnalyticsBrowser)
+    })
+
+    it("should load analytics again with the new configuration", () => {
+      expect(loaded).toHaveLength(2)
+      expect(AnalyticsBrowser.load).toHaveBeenLastCalledWith(
+        { writeKey: mockWriteKey, cdnURL: "https://two.example.com" },
+        {}
+      )
+    })
+
+    it("should route the calls to the instance of the latest load", () => {
+      analytics.track("test_event")
+
+      expect(loaded[1].track).toHaveBeenCalledWith("test_event", undefined)
+      expect(loaded[0].track).not.toHaveBeenCalled()
     })
   })
 

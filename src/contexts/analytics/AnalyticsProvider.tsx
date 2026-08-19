@@ -23,6 +23,8 @@ const AnalyticsProvider: React.FC<AnalyticsProviderProps> = (
 ) => {
   const { writeKey, userId, traits, cdnUrl, apiHost, children } = props
   const analyticsRef = useRef<AnalyticsBrowser | null>(null)
+  // Identifies the latest load, so an earlier one whose import resolves after it cannot take over
+  const loadIdRef = useRef(0)
   const [isInitialized, setIsInitialized] = useState(false)
 
   useAsyncEffect(async () => {
@@ -38,6 +40,8 @@ const AnalyticsProvider: React.FC<AnalyticsProviderProps> = (
       console.log("[Analytics] Skipping load: bot detected")
       return
     }
+
+    const loadId = ++loadIdRef.current
 
     try {
       // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -55,16 +59,27 @@ const AnalyticsProvider: React.FC<AnalyticsProviderProps> = (
         options.integrations = { [SEGMENT_IO]: { apiHost: resolvedApiHost } }
       }
 
-      analyticsRef.current = AnalyticsBrowser.load(settings, options)
+      const analytics = AnalyticsBrowser.load(settings, options)
+
+      // A newer configuration won while this import was in flight. analytics-next has no teardown for
+      // the superseded instance (`reset` only clears the identity, which would drop the anonymous id
+      // and break attribution), so it is left unreferenced instead of overwriting the current one.
+      if (loadId !== loadIdRef.current) {
+        return
+      }
+
+      analyticsRef.current = analytics
 
       if (userId) {
-        analyticsRef.current.identify(userId, traits)
+        analytics.identify(userId, traits)
       }
 
       setIsInitialized(true)
     } catch (error) {
       console.error("[Analytics] Failed to initialize:", error)
-      analyticsRef.current = null
+      if (loadId === loadIdRef.current) {
+        analyticsRef.current = null
+      }
     }
   }, [writeKey, userId, traits, cdnUrl, apiHost])
 
