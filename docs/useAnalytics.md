@@ -23,6 +23,8 @@ type AnalyticsProviderProps = {
   writeKey: string                    // Segment write key (required)
   userId?: string                     // Identify user on init
   traits?: Record<string, unknown>    // User traits for identify
+  cdnUrl?: string                     // First party origin for settings and remote plugins
+  apiHost?: string                    // First party host for event delivery, no protocol
   children: React.ReactNode
 }
 ```
@@ -49,6 +51,28 @@ function App() {
 - Skips initialization when the user agent is a bot (detected via `isbot`).
 - If `userId` is provided, calls `identify()` after initialization.
 - Returns no-op functions until Segment finishes loading.
+
+### First party proxy
+
+By default the SDK fetches its settings and its remote plugins from `cdn.segment.com` and delivers events to `api.segment.io/v1`, both of which ad blockers drop, so those sessions send no events. Point `cdnUrl` and `apiHost` at a first party proxy to serve them from your own domain instead:
+
+```typescript
+function App() {
+  return (
+    <AnalyticsProvider
+      writeKey="YOUR_SEGMENT_WRITE_KEY"
+      cdnUrl="https://analytics.example.org"
+      apiHost="analytics.example.org/v1"
+    >
+      <Main />
+    </AnalyticsProvider>
+  )
+}
+```
+
+Both are optional and independent, so configure only the one your proxy actually serves. `cdnUrl` is an origin (the SDK appends `/v1/projects/<writeKey>/settings` to it), while `apiHost` is a host plus base path without a protocol (the SDK prepends `https://` and appends the method path). A `https://` prefix on `apiHost` is accepted and stripped.
+
+Both decide where a third party script is loaded from and where every event is delivered, so they are meant to be trusted values coming from the build configuration of the app, never from user input. A value that is not a valid url, or that is not served over https unless it belongs to the app's own origin, is ignored with a warning and analytics falls back to Segment's own endpoints.
 
 ---
 
