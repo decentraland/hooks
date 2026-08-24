@@ -1040,4 +1040,131 @@ describe("useTranslation", () => {
       expect(["United States", "US"]).toContain(formatted)
     })
   })
+  describe("when the translations prop gains a locale after the first render", () => {
+    let initialTranslations: LanguageTranslations
+    let loadedTranslations: LanguageTranslations
+
+    beforeEach(() => {
+      initialTranslations = {
+        en: {
+          simple: "Simple text",
+        },
+      }
+      loadedTranslations = {
+        ...initialTranslations,
+        es: {
+          simple: "Texto simple",
+        },
+      }
+    })
+
+    it("should let setLocale switch to it", () => {
+      const { result, rerender } = renderHook(
+        (props: { translations: LanguageTranslations }) =>
+          useTranslation({
+            locale: "en",
+            translations: props.translations,
+          }),
+        { initialProps: { translations: initialTranslations } }
+      )
+
+      rerender({ translations: loadedTranslations })
+
+      act(() => {
+        result.current.setLocale("es")
+      })
+
+      expect(result.current.locale).toBe("es")
+    })
+
+    it("should translate with the messages that just arrived", () => {
+      const { result, rerender } = renderHook(
+        (props: { translations: LanguageTranslations }) =>
+          useTranslation({
+            locale: "en",
+            translations: props.translations,
+          }),
+        { initialProps: { translations: initialTranslations } }
+      )
+
+      rerender({ translations: loadedTranslations })
+
+      act(() => {
+        result.current.setLocale("es")
+      })
+
+      expect(result.current.t("simple")).toBe("Texto simple")
+    })
+  })
+
+  describe("when the locale prop changes", () => {
+    let mockTranslations: LanguageTranslations
+
+    beforeEach(() => {
+      mockTranslations = {
+        en: {
+          simple: "Simple text",
+        },
+        es: {
+          simple: "Texto simple",
+        },
+      }
+    })
+
+    it("should adopt the new locale", () => {
+      const { result, rerender } = renderHook(
+        (props: { locale: string }) =>
+          useTranslation({
+            locale: props.locale,
+            translations: mockTranslations,
+          }),
+        { initialProps: { locale: "en" } }
+      )
+
+      rerender({ locale: "es" })
+
+      expect(result.current.locale).toBe("es")
+      expect(result.current.t("simple")).toBe("Texto simple")
+    })
+
+    it("should clear the error left by a locale that was not available", () => {
+      const { result, rerender } = renderHook(
+        (props: { locale: string }) =>
+          useTranslation({
+            locale: props.locale,
+            translations: mockTranslations,
+          }),
+        { initialProps: { locale: "en" } }
+      )
+
+      act(() => {
+        result.current.setLocale("de")
+      })
+
+      expect(result.current.error).toBe('Locale "de" not found')
+
+      rerender({ locale: "es" })
+
+      expect(result.current.error).toBe(null)
+    })
+
+    it("should keep a locale set from inside when the prop does not change", () => {
+      const { result, rerender } = renderHook(
+        (props: { locale: string }) =>
+          useTranslation({
+            locale: props.locale,
+            translations: mockTranslations,
+          }),
+        { initialProps: { locale: "en" } }
+      )
+
+      act(() => {
+        result.current.setLocale("es")
+      })
+
+      rerender({ locale: "en" })
+
+      expect(result.current.locale).toBe("es")
+    })
+  })
 })
