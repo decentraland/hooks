@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useMemo, useState } from "react"
+import { useCallback, useContext, useMemo, useState } from "react"
 import { createIntl, createIntlCache } from "@formatjs/intl"
 import {
   TranslationOptions,
@@ -14,8 +14,12 @@ const cache = createIntlCache()
 type FlatTranslations = Record<string, string>
 
 // `translations` is read from the props on every render, so the hook only owns
-// the active locale and the last error.
-type HookState<L extends string> = Omit<TranslationState<L>, "translations">
+// the active locale and the last error. `propLocale` is the `locale` prop the
+// active one was derived from, which is how a prop change is told apart from a
+// `setLocale` call.
+type HookState<L extends string> = Omit<TranslationState<L>, "translations"> & {
+  propLocale: L
+}
 
 const flattenTranslations = (
   translations: Translations,
@@ -51,8 +55,8 @@ const flattenTranslations = (
  * 2. Without options (context mode): Uses TranslationProvider context
  *
  * @param options - Optional configuration options for translations. If not provided, will use TranslationProvider context.
- * @param options.locale - The locale to use (required in standalone mode). Changing it switches the active language, so a consumer can drive the language from the outside
- * @param options.translations - An object containing all translations for all locales (required in standalone mode). It is read on every render, so a locale added after mount becomes available to `setLocale`
+ * @param options.locale - The locale to use (required in standalone mode). Changing it switches the active language, so a consumer can drive the language from the outside. A language set through `setLocale` is kept while this prop stays the same, so passing a literal keeps `setLocale` in charge
+ * @param options.translations - An object containing all translations for all locales (required in standalone mode). It is read on every render, so a locale added after mount becomes available to `setLocale`. Keep it in state or memoize it: a new object on every render re-flattens every locale and rebuilds the `intl` instance
  * @param options.fallbackLocale - Optional fallback locale if a translation is not found
  *
  * @returns An object with translation utilities including the full IntlShape instance
@@ -146,6 +150,7 @@ const useTranslation = <L extends string = string>(
   const { translations, fallbackLocale } = validatedOptions
   const [state, setState] = useState<HookState<L>>({
     locale: validatedOptions.locale,
+    propLocale: validatedOptions.locale,
     error: null,
   })
 
@@ -153,13 +158,17 @@ const useTranslation = <L extends string = string>(
   // Snapshotting them on the first render leaves a consumer that loads a locale
   // on demand with no way to hand it over: the language would be stuck on
   // whatever was available when the provider mounted.
-  useEffect(() => {
-    setState((current) =>
-      current.locale === validatedOptions.locale
-        ? current
-        : { locale: validatedOptions.locale, error: null }
-    )
-  }, [validatedOptions.locale])
+  //
+  // The prop is adjusted during render rather than in an effect so the new
+  // language is on screen in the same paint. An effect would render once with
+  // the previous locale first.
+  if (state.propLocale !== validatedOptions.locale) {
+    setState({
+      locale: validatedOptions.locale,
+      propLocale: validatedOptions.locale,
+      error: null,
+    })
+  }
 
   const flattenedTranslations = useMemo(() => {
     const locales: Record<string, FlatTranslations> = {}
