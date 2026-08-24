@@ -13,6 +13,14 @@ const cache = createIntlCache()
 
 type FlatTranslations = Record<string, string>
 
+// `translations` is read from the props on every render, so the hook only owns
+// the active locale and the last error. `propLocale` is the `locale` prop the
+// active one was derived from, which is how a prop change is told apart from a
+// `setLocale` call.
+type HookState<L extends string> = Omit<TranslationState<L>, "translations"> & {
+  propLocale: L
+}
+
 const flattenTranslations = (
   translations: Translations,
   parentKey = "",
@@ -47,8 +55,8 @@ const flattenTranslations = (
  * 2. Without options (context mode): Uses TranslationProvider context
  *
  * @param options - Optional configuration options for translations. If not provided, will use TranslationProvider context.
- * @param options.locale - The initial locale to use (required in standalone mode)
- * @param options.translations - An object containing all translations for all locales (required in standalone mode)
+ * @param options.locale - The locale to use (required in standalone mode). Changing it switches the active language, so a consumer can drive the language from the outside. A language set through `setLocale` is kept while this prop stays the same, so passing a literal keeps `setLocale` in charge
+ * @param options.translations - An object containing all translations for all locales (required in standalone mode). It is read on every render, so a locale added after mount becomes available to `setLocale`. Keep it in state or memoize it: a new object on every render re-flattens every locale and rebuilds the `intl` instance
  * @param options.fallbackLocale - Optional fallback locale if a translation is not found
  *
  * @returns An object with translation utilities including the full IntlShape instance
@@ -139,32 +147,48 @@ const useTranslation = <L extends string = string>(
   }
 
   const validatedOptions = options as TranslationOptions<L>
-  const [state, setState] = useState<TranslationState<L>>({
+  const { translations, fallbackLocale } = validatedOptions
+  const [state, setState] = useState<HookState<L>>({
     locale: validatedOptions.locale,
-    translations: validatedOptions.translations,
+    propLocale: validatedOptions.locale,
     error: null,
   })
+
+  // `translations` and `locale` stay props instead of being copied into state.
+  // Snapshotting them on the first render leaves a consumer that loads a locale
+  // on demand with no way to hand it over: the language would be stuck on
+  // whatever was available when the provider mounted.
+  //
+  // The prop is adjusted during render rather than in an effect so the new
+  // language is on screen in the same paint. An effect would render once with
+  // the previous locale first.
+  if (state.propLocale !== validatedOptions.locale) {
+    setState({
+      locale: validatedOptions.locale,
+      propLocale: validatedOptions.locale,
+      error: null,
+    })
+  }
 
   const flattenedTranslations = useMemo(() => {
     const locales: Record<string, FlatTranslations> = {}
 
-    Object.entries(state.translations).forEach(([locale, translations]) => {
-      locales[locale] = flattenTranslations(translations)
+    Object.entries(translations).forEach(([locale, localeTranslations]) => {
+      locales[locale] = flattenTranslations(localeTranslations)
     })
 
     return locales
-  }, [state.translations])
+  }, [translations])
 
   // Create intl instance with current locale and translations
   const intl = useMemo(() => {
     const currentTranslations = flattenedTranslations[state.locale]
     const fallbackTranslations =
-      validatedOptions.fallbackLocale &&
-      flattenedTranslations[validatedOptions.fallbackLocale]
+      fallbackLocale && flattenedTranslations[fallbackLocale]
 
     if (!currentTranslations && fallbackTranslations) {
       console.error(
-        `No translations found for locale "${state.locale}". Using fallback locale "${validatedOptions.fallbackLocale}".`
+        `No translations found for locale "${state.locale}". Using fallback locale "${fallbackLocale}".`
       )
       return createIntl(
         {
@@ -189,9 +213,7 @@ const useTranslation = <L extends string = string>(
     }
 
     const shouldMergeFallback =
-      validatedOptions.fallbackLocale &&
-      state.locale !== validatedOptions.fallbackLocale &&
-      fallbackTranslations
+      fallbackLocale && state.locale !== fallbackLocale && fallbackTranslations
 
     const messages = shouldMergeFallback
       ? {
@@ -207,7 +229,7 @@ const useTranslation = <L extends string = string>(
       },
       cache
     )
-  }, [state.locale, flattenedTranslations, validatedOptions.fallbackLocale])
+  }, [state.locale, flattenedTranslations, fallbackLocale])
 
   // Simplified t() function using intl.formatMessage
   const t = useCallback(
@@ -219,9 +241,9 @@ const useTranslation = <L extends string = string>(
 
   const setLocale = useCallback(
     (newLocale: string) => {
-      if (!state.translations[newLocale]) {
+      if (!translations[newLocale]) {
         console.error(
-          `Locale "${newLocale}" not found in translations. Available locales: ${Object.keys(state.translations).join(", ")}`
+          `Locale "${newLocale}" not found in translations. Available locales: ${Object.keys(translations).join(", ")}`
         )
         setState((current) => ({
           ...current,
@@ -236,7 +258,7 @@ const useTranslation = <L extends string = string>(
         error: null,
       }))
     },
-    [state.translations]
+    [translations]
   )
 
   return {
