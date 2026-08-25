@@ -1,6 +1,7 @@
 import React from "react"
-import { act, render, renderHook } from "@testing-library/react/pure"
+import { act, cleanup, render, renderHook } from "@testing-library/react/pure"
 import { AnalyticsProvider } from "../../src/contexts/analytics/AnalyticsProvider"
+import { getAnalytics } from "../../src/contexts/analytics/registry"
 import { useAnalytics } from "../../src/hooks/useAnalytics"
 import type { AnalyticsContextType } from "../../src/contexts/analytics/types"
 
@@ -36,6 +37,12 @@ describe("useAnalytics", () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+  })
+
+  // The pure entrypoint does not auto-unmount: without this a provider stays mounted across tests and
+  // its instance leaks into the registry the next one reads.
+  afterEach(() => {
+    cleanup()
   })
 
   describe("when used outside of AnalyticsProvider", () => {
@@ -196,6 +203,7 @@ describe("useAnalytics", () => {
     const { AnalyticsBrowser } = jest.requireMock("@segment/analytics-next")
     let loaded: { track: jest.Mock }[]
     let analytics: AnalyticsContextType
+    let consoleWarn: jest.SpyInstance
 
     // Probe that exposes the context value of whichever provider is mounted
     const probe = () => {
@@ -211,6 +219,7 @@ describe("useAnalytics", () => {
       })
 
     beforeEach(async () => {
+      consoleWarn = jest.spyOn(console, "warn").mockImplementation(() => {})
       loaded = []
       AnalyticsBrowser.load.mockImplementation(() => {
         const instance = {
@@ -231,6 +240,7 @@ describe("useAnalytics", () => {
 
     afterEach(() => {
       AnalyticsBrowser.load.mockReturnValue(mockAnalyticsBrowser)
+      consoleWarn.mockRestore()
     })
 
     it("should load analytics again with the new configuration", () => {
@@ -241,11 +251,168 @@ describe("useAnalytics", () => {
       )
     })
 
+    it("should not warn about multiple providers, the previous instance unregistered first", () => {
+      expect(consoleWarn).not.toHaveBeenCalledWith(
+        expect.stringContaining("more than one AnalyticsProvider")
+      )
+    })
+
     it("should route the calls to the instance of the latest load", () => {
       analytics.track("test_event")
 
       expect(loaded[1].track).toHaveBeenCalledWith("test_event", undefined)
       expect(loaded[0].track).not.toHaveBeenCalled()
+    })
+  })
+
+  describe("when code outside react reads the analytics instance", () => {
+    const { AnalyticsBrowser } = jest.requireMock("@segment/analytics-next")
+
+    describe("and a provider loaded analytics", () => {
+      let rendered: ReturnType<typeof renderHook<AnalyticsContextType, unknown>>
+
+      beforeEach(async () => {
+        rendered = renderHook(() => useAnalytics(), {
+          wrapper: ({ children }) =>
+            AnalyticsProvider({ writeKey: mockWriteKey, children }),
+        })
+        await act(async () => {})
+      })
+
+      afterEach(() => {
+        rendered.unmount()
+      })
+
+      it("should return the instance the load produced", () => {
+        expect(getAnalytics()).toBe(mockAnalyticsBrowser)
+      })
+    })
+
+    describe("and the provider that loaded analytics unmounts", () => {
+      beforeEach(async () => {
+        const { unmount } = renderHook(() => useAnalytics(), {
+          wrapper: ({ children }) =>
+            AnalyticsProvider({ writeKey: mockWriteKey, children }),
+        })
+        await act(async () => {})
+        unmount()
+      })
+
+      it("should return null", () => {
+        expect(getAnalytics()).toBeNull()
+      })
+    })
+
+    describe("and the provider is reconfigured without a write key", () => {
+      let analytics: AnalyticsContextType
+
+      // Probe that exposes the context value of whichever provider is mounted
+      const probe = () => {
+        analytics = useAnalytics()
+        return null
+      }
+
+      const renderWithWriteKey = (writeKey: string) =>
+        React.createElement(AnalyticsProvider, {
+          writeKey,
+          children: React.createElement(probe),
+        })
+
+      beforeEach(async () => {
+        const { rerender } = render(renderWithWriteKey(mockWriteKey))
+        await act(async () => {})
+
+        rerender(renderWithWriteKey(""))
+        await act(async () => {})
+      })
+
+      it("should return null", () => {
+        expect(getAnalytics()).toBeNull()
+      })
+
+      it("should report the still mounted consumer as non initialized", () => {
+        expect(analytics.isInitialized).toBe(false)
+      })
+
+      it("should no-op the calls the still mounted consumer makes", () => {
+        analytics.track("test_event")
+
+        expect(mockAnalyticsMethods.track).not.toHaveBeenCalled()
+      })
+    })
+
+    describe("and the provider unmounts before the pending load resolves", () => {
+      beforeEach(async () => {
+        const { unmount } = renderHook(() => useAnalytics(), {
+          wrapper: ({ children }) =>
+            AnalyticsProvider({ writeKey: mockWriteKey, children }),
+        })
+        unmount()
+        await act(async () => {})
+      })
+
+      it("should not load analytics at all", () => {
+        expect(AnalyticsBrowser.load).not.toHaveBeenCalled()
+      })
+
+      it("should return null", () => {
+        expect(getAnalytics()).toBeNull()
+      })
+    })
+
+    describe("and the load throws while setting analytics up", () => {
+      let consoleError: jest.SpyInstance
+
+      beforeEach(async () => {
+        consoleError = jest.spyOn(console, "error").mockImplementation(() => {})
+        AnalyticsBrowser.load.mockImplementationOnce(() => {
+          throw new Error("load failed")
+        })
+        renderHook(() => useAnalytics(), {
+          wrapper: ({ children }) =>
+            AnalyticsProvider({ writeKey: mockWriteKey, children }),
+        })
+        await act(async () => {})
+      })
+
+      afterEach(() => {
+        consoleError.mockRestore()
+      })
+
+      it("should return null", () => {
+        expect(getAnalytics()).toBeNull()
+      })
+    })
+
+    describe("and identifying the user throws right after the load", () => {
+      let consoleError: jest.SpyInstance
+
+      beforeEach(async () => {
+        consoleError = jest.spyOn(console, "error").mockImplementation(() => {})
+        AnalyticsBrowser.load.mockReturnValueOnce({
+          ...mockAnalyticsBrowser,
+          identify: jest.fn().mockImplementation(() => {
+            throw new Error("identify failed")
+          }),
+        })
+        renderHook(() => useAnalytics(), {
+          wrapper: ({ children }) =>
+            AnalyticsProvider({
+              writeKey: mockWriteKey,
+              userId: mockUserId,
+              children,
+            }),
+        })
+        await act(async () => {})
+      })
+
+      afterEach(() => {
+        consoleError.mockRestore()
+      })
+
+      it("should return null", () => {
+        expect(getAnalytics()).toBeNull()
+      })
     })
   })
 
