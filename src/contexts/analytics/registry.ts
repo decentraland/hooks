@@ -13,6 +13,13 @@ const getAnalytics = (): AnalyticsBrowser | null => current
 
 /** Registers the instance a successful load produced. Not part of the package's public API. */
 const registerAnalyticsInstance = (instance: AnalyticsBrowser): void => {
+  // The registry is global while each provider owns its own context, so with two providers mounted at
+  // once the newest load silently wins for every caller outside React. Surface it instead.
+  if (current !== null && current !== instance) {
+    console.warn(
+      "[Analytics] Replacing the registered analytics instance: more than one AnalyticsProvider is mounted."
+    )
+  }
   current = instance
 }
 

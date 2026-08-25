@@ -1,5 +1,5 @@
 import React from "react"
-import { act, render, renderHook } from "@testing-library/react/pure"
+import { act, cleanup, render, renderHook } from "@testing-library/react/pure"
 import { AnalyticsProvider } from "../../src/contexts/analytics/AnalyticsProvider"
 import { getAnalytics } from "../../src/contexts/analytics/registry"
 import { useAnalytics } from "../../src/hooks/useAnalytics"
@@ -37,6 +37,12 @@ describe("useAnalytics", () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+  })
+
+  // The pure entrypoint does not auto-unmount: without this a provider stays mounted across tests and
+  // its instance leaks into the registry the next one reads.
+  afterEach(() => {
+    cleanup()
   })
 
   describe("when used outside of AnalyticsProvider", () => {
@@ -197,6 +203,7 @@ describe("useAnalytics", () => {
     const { AnalyticsBrowser } = jest.requireMock("@segment/analytics-next")
     let loaded: { track: jest.Mock }[]
     let analytics: AnalyticsContextType
+    let consoleWarn: jest.SpyInstance
 
     // Probe that exposes the context value of whichever provider is mounted
     const probe = () => {
@@ -212,6 +219,7 @@ describe("useAnalytics", () => {
       })
 
     beforeEach(async () => {
+      consoleWarn = jest.spyOn(console, "warn").mockImplementation(() => {})
       loaded = []
       AnalyticsBrowser.load.mockImplementation(() => {
         const instance = {
@@ -232,6 +240,7 @@ describe("useAnalytics", () => {
 
     afterEach(() => {
       AnalyticsBrowser.load.mockReturnValue(mockAnalyticsBrowser)
+      consoleWarn.mockRestore()
     })
 
     it("should load analytics again with the new configuration", () => {
@@ -239,6 +248,12 @@ describe("useAnalytics", () => {
       expect(AnalyticsBrowser.load).toHaveBeenLastCalledWith(
         { writeKey: mockWriteKey, cdnURL: "https://two.example.com" },
         {}
+      )
+    })
+
+    it("should not warn about multiple providers, the previous instance unregistered first", () => {
+      expect(consoleWarn).not.toHaveBeenCalledWith(
+        expect.stringContaining("more than one AnalyticsProvider")
       )
     })
 

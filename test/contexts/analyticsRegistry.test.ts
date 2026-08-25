@@ -41,6 +41,48 @@ describe("when reading the analytics registry", () => {
       })
     })
 
+    describe("and a second provider registers another instance while this one is registered", () => {
+      let consoleWarn: jest.SpyInstance
+      let other: AnalyticsBrowser
+
+      beforeEach(() => {
+        consoleWarn = jest.spyOn(console, "warn").mockImplementation(() => {})
+        other = { label: "other" } as unknown as AnalyticsBrowser
+        registerAnalyticsInstance(other)
+      })
+
+      afterEach(() => {
+        consoleWarn.mockRestore()
+      })
+
+      it("should warn that more than one provider is mounted", () => {
+        expect(consoleWarn).toHaveBeenCalledWith(
+          expect.stringContaining("AnalyticsProvider")
+        )
+      })
+
+      it("should return the instance that registered last", () => {
+        expect(getAnalytics()).toBe(other)
+      })
+    })
+
+    describe("and the same instance registers again", () => {
+      let consoleWarn: jest.SpyInstance
+
+      beforeEach(() => {
+        consoleWarn = jest.spyOn(console, "warn").mockImplementation(() => {})
+        registerAnalyticsInstance(instance)
+      })
+
+      afterEach(() => {
+        consoleWarn.mockRestore()
+      })
+
+      it("should not warn", () => {
+        expect(consoleWarn).not.toHaveBeenCalled()
+      })
+    })
+
     describe("and a newer instance registered before the older one unregisters", () => {
       let newer: AnalyticsBrowser
 
