@@ -15,7 +15,13 @@ import {
 
 ## Peer Dependency
 
-Requires `decentraland-crypto-fetch@^2.0.1` for signed API requests.
+Requires `decentraland-crypto-fetch@>=2.0.0` for signed API requests.
+
+The range accepts both majors because they differ in a way consumers care about: version 3
+signs the ADR-44 payload with the metadata bytes bound into the signature, which services on
+`@dcl/crypto-middleware` 6 verify, and it requires Node >= 22. Version 2 signs the older folded
+payload and runs anywhere. npm resolves a peer to the highest satisfying version, so an app that
+needs to stay on 2.x should depend on it directly rather than relying on this range.
 
 ## Types
 
