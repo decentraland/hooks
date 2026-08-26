@@ -13,7 +13,10 @@ npm install @dcl/hooks
 ### Peer Dependencies
 
 - `react` >= 18.0.0
-- `decentraland-crypto-fetch` >= 2.0.1 (only needed for `useNotifications`)
+- `decentraland-crypto-fetch` >= 2.0.0 (only needed for `useNotifications`).
+  Version 3 signs the ADR-44 payload with the metadata bytes bound into the signature and
+  requires Node >= 22; version 2 does neither. npm installs the highest match, so pin the
+  major your app targets if that matters to you.
 
 ## Available Hooks
 

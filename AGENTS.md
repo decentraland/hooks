@@ -2,7 +2,7 @@
 
 React hooks library for Decentraland dApps. Install: `npm install @dcl/hooks`
 
-Peer deps: `react@^18.0.0`, `decentraland-crypto-fetch@^2.0.1` (notifications only).
+Peer deps: `react@^18.0.0`, `decentraland-crypto-fetch@>=2.0.0` (notifications only).
 
 All exports come from `@dcl/hooks`.
 
