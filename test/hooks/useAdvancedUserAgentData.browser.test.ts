@@ -209,10 +209,19 @@ describe("useAdvancedUserAgentData browser detection", () => {
       expect(data?.os.name).toBe("Android")
     })
 
-    it("should not make more getHighEntropyValues calls than before this fix", async () => {
-      await detect(environment)
-      // result + OS + CPU, as in the original hook (the result reads them for itself)
-      expect(hintsCalls).toBe(4)
+    it("should read the Client Hints once for the result, once for the OS and once for the CPU", async () => {
+      const { renderHook, act, cleanup, useAdvancedUserAgentData } =
+        loadHook(environment)
+      // Loading the hook also loads @sentry/browser, whose profiling code calls
+      // getHighEntropyValues once on its own (a 4th call that is not ours, and that
+      // would change with a Sentry bump). Only the calls made after that count.
+      const callsOnImport = hintsCalls
+      renderHook(() => useAdvancedUserAgentData())
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 50))
+      })
+      cleanup()
+      expect(hintsCalls - callsOnImport).toBe(3)
     })
 
     describe("and they report the Brave brand", () => {
@@ -245,13 +254,16 @@ describe("useAdvancedUserAgentData browser detection", () => {
 
   describe("when Client Hints are rejected", () => {
     let environment: Environment
+    let consoleError: jest.SpyInstance
 
     beforeEach(() => {
       environment = {
         userAgent: USER_AGENTS.edge,
         getHighEntropyValues: () => Promise.reject(new Error("blocked")),
       }
-      jest.spyOn(console, "error").mockImplementation(() => undefined)
+      consoleError = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => undefined)
     })
 
     it("should resolve with the user agent data and stop loading", async () => {
@@ -264,6 +276,12 @@ describe("useAdvancedUserAgentData browser detection", () => {
       expect(result.current[0]).toBe(false)
       expect(result.current[1]?.browser.name).toBe("Edge")
       cleanup()
+    })
+
+    // The rejection is handled by the hook: if it reached useAsyncEffect's catch it would be logged.
+    it("should not log anything", async () => {
+      await detect(environment)
+      expect(consoleError).not.toHaveBeenCalled()
     })
 
     describe("and the browser is Brave", () => {
@@ -370,7 +388,7 @@ describe("useAdvancedUserAgentData browser detection", () => {
       const settled = result.current[1]
       const snapshot = JSON.parse(JSON.stringify(settled))
       const settledRenders = seen.filter(([isLoading]) => !isLoading).length
-      expect(hintsCalls).toBeGreaterThanOrEqual(4)
+      expect(hintsCalls).toBeGreaterThanOrEqual(3)
       expect(snapshot.browser).toEqual({ name: "Brave", version: "124.0.0.0" })
       expect(snapshot.os).toEqual({ name: "macOS", version: "10.15.7" })
       expect(snapshot.cpu).toEqual({ architecture: "Unknown" })
