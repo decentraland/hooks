@@ -10,6 +10,8 @@ const USER_AGENTS = {
   edge: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Edg/124.0.2478.67",
   opera:
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 OPR/96.0.0.0",
+  chromeAndroid:
+    "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
   firefox:
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0",
   safari:
@@ -27,6 +29,26 @@ type HookModule = {
   act: typeof import("@testing-library/react/pure").act
   cleanup: typeof import("@testing-library/react/pure").cleanup
   useAdvancedUserAgentData: typeof import("../../src/hooks/useAdvancedUserAgentData").useAdvancedUserAgentData
+}
+
+const NAVIGATOR_OVERRIDES = ["userAgent", "brave", "userAgentData"] as const
+const originalDescriptors = Object.fromEntries(
+  NAVIGATOR_OVERRIDES.map((key) => [
+    key,
+    Object.getOwnPropertyDescriptor(window.navigator, key),
+  ])
+)
+
+// loadHook redefines these properties on the shared navigator; put them back.
+function restoreNavigator(): void {
+  NAVIGATOR_OVERRIDES.forEach((key) => {
+    const original = originalDescriptors[key]
+    if (original) {
+      Object.defineProperty(window.navigator, key, original)
+    } else {
+      delete (window.navigator as unknown as Record<string, unknown>)[key]
+    }
+  })
 }
 
 // ua-parser-js reads `navigator.userAgentData` once, when it is first loaded,
@@ -88,6 +110,7 @@ describe("useAdvancedUserAgentData browser detection", () => {
   })
 
   afterEach(() => {
+    restoreNavigator()
     jest.useRealTimers()
     jest.restoreAllMocks()
   })
@@ -134,6 +157,81 @@ describe("useAdvancedUserAgentData browser detection", () => {
             }),
         })
         expect(data?.browser.name).toBe("Brave")
+      })
+    })
+  })
+
+  describe("when Client Hints resolve", () => {
+    const fullChromeHints = {
+      brands: [
+        { brand: "Chromium", version: "124" },
+        { brand: "Google Chrome", version: "124" },
+      ],
+      fullVersionList: [
+        { brand: "Chromium", version: "124.0.6367.60" },
+        { brand: "Google Chrome", version: "124.0.6367.60" },
+      ],
+      platform: "Android",
+      platformVersion: "10.0.0",
+    }
+    let hintsCalls: number
+    let environment: Environment
+
+    beforeEach(() => {
+      hintsCalls = 0
+      environment = {
+        userAgent: USER_AGENTS.chromeAndroid,
+        getHighEntropyValues: () => {
+          hintsCalls += 1
+          return Promise.resolve(fullChromeHints)
+        },
+      }
+    })
+
+    it("should keep the browser name and the reduced version from the user agent", async () => {
+      const data = await detect(environment)
+      expect(data?.browser).toEqual({
+        name: "Mobile Chrome",
+        version: "124.0.0.0",
+      })
+    })
+
+    it("should keep the engine from the user agent", async () => {
+      const withoutHints = await detect({
+        userAgent: USER_AGENTS.chromeAndroid,
+      })
+      const data = await detect(environment)
+      expect(data?.engine).toEqual(withoutHints?.engine)
+    })
+
+    it("should still take the OS from the hints", async () => {
+      const data = await detect(environment)
+      expect(data?.os.name).toBe("Android")
+    })
+
+    it("should not make more getHighEntropyValues calls than before this fix", async () => {
+      await detect(environment)
+      // result + OS + CPU, as in the original hook (the result reads them for itself)
+      expect(hintsCalls).toBe(4)
+    })
+
+    describe("and they report the Brave brand", () => {
+      it("should resolve Brave without navigator.brave", async () => {
+        const data = await detect({
+          userAgent: USER_AGENTS.chrome,
+          getHighEntropyValues: () =>
+            Promise.resolve({
+              brands: [
+                { brand: "Chromium", version: "124" },
+                { brand: "Brave", version: "124" },
+              ],
+              fullVersionList: [
+                { brand: "Chromium", version: "124.0.6367.60" },
+                { brand: "Brave", version: "124.0.6367.60" },
+              ],
+            }),
+        })
+        expect(data?.browser).toEqual({ name: "Brave", version: "124.0.0.0" })
       })
     })
   })

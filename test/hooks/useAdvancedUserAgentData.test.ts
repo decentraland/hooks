@@ -38,7 +38,7 @@ describe("useAdvancedUserAgentData", () => {
     mockUAParser.getResult.mockReturnValue({
       browser: { name: "Chrome", version: "100.0" },
       engine: { name: "Blink", version: "100.0" },
-      withClientHints: jest.fn().mockResolvedValue({}),
+      withClientHints: jest.fn().mockResolvedValue({ browser: {} }),
     })
 
     mockUAParser.getOS.mockReturnValue({
@@ -80,7 +80,9 @@ describe("useAdvancedUserAgentData", () => {
     mockUAParser.getResult.mockReturnValue({
       browser: { name: "Safari", version: "15.0" },
       engine: { name: "WebKit", version: "15.0" },
-      withClientHints: jest.fn().mockResolvedValue({ platform: "macOS" }),
+      withClientHints: jest
+        .fn()
+        .mockResolvedValue({ browser: {}, platform: "macOS" }),
     })
 
     mockUAParser.getOS.mockReturnValue({
@@ -113,7 +115,7 @@ describe("useAdvancedUserAgentData", () => {
     mockUAParser.getResult.mockReturnValue({
       browser: {},
       engine: {},
-      withClientHints: jest.fn().mockResolvedValue({}),
+      withClientHints: jest.fn().mockResolvedValue({ browser: {} }),
     })
 
     mockUAParser.getOS.mockReturnValue({
@@ -172,7 +174,7 @@ describe("useAdvancedUserAgentData", () => {
     mockUAParser.getResult.mockReturnValue({
       browser: { name: "Chrome", version: "91" },
       engine: { name: "Blink", version: "91" },
-      withClientHints: jest.fn().mockResolvedValue({}),
+      withClientHints: jest.fn().mockResolvedValue({ browser: {} }),
     })
 
     mockUAParser.getOS.mockReturnValue({
@@ -220,7 +222,7 @@ describe("useAdvancedUserAgentData", () => {
     mockUAParser.getResult.mockReturnValue({
       browser: { name: "Unknown", version: "Unknown" },
       engine: { name: "Unknown", version: "Unknown" },
-      withClientHints: jest.fn().mockResolvedValue({}),
+      withClientHints: jest.fn().mockResolvedValue({ browser: {} }),
     })
 
     mockUAParser.getOS.mockReturnValue({
@@ -256,7 +258,7 @@ describe("useAdvancedUserAgentData", () => {
     mockUAParser.getResult.mockReturnValue({
       browser: { name: "Chrome", version: "100.0" },
       engine: { name: "Blink", version: "100.0" },
-      withClientHints: jest.fn().mockResolvedValue({}),
+      withClientHints: jest.fn().mockResolvedValue({ browser: {} }),
     })
 
     mockUAParser.getOS.mockReturnValue({
