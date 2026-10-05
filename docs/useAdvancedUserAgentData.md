@@ -106,6 +106,7 @@ function useEnrichedAnalytics() {
 
 ## Pitfalls
 
-- Uses the User-Agent Client Hints API when available, falling back to `ua-parser-js` for standard user agent parsing.
+- Uses the User-Agent Client Hints API when available, falling back to `ua-parser-js` for standard user agent parsing. If the Client Hints call rejects or takes longer than 1.5 seconds, the hook resolves with the User-Agent data instead of staying in `isLoading`.
+- `browser` and `engine` come from the user-agent string (name and reduced version). Brave sends a Chrome user agent, so it is reported as `Brave` through its Client Hints brand or `navigator.brave`.
 - The `architecture` field may be empty on some browsers/devices.
 - Returns `undefined` (not `null`) while loading.
