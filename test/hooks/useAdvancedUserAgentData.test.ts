@@ -11,6 +11,7 @@ jest.mock("../__mocks__/sentry")
 describe("useAdvancedUserAgentData", () => {
   const mockUAParser = {
     getResult: jest.fn(),
+    getBrowser: jest.fn(),
     getOS: jest.fn(),
     getCPU: jest.fn(),
     getDevice: jest.fn(),
@@ -19,6 +20,16 @@ describe("useAdvancedUserAgentData", () => {
   beforeEach(() => {
     jest.clearAllMocks()
     resetUserAgentCache()
+    // The browser comes from its own parser item, built from the same fixture
+    // the test registers on getResult().
+    mockUAParser.getBrowser.mockImplementation(() => {
+      const browser = mockUAParser.getResult()?.browser ?? {}
+      return {
+        ...browser,
+        withClientHints: jest.fn().mockResolvedValue(browser),
+        withFeatureCheck: jest.fn().mockReturnValue(browser),
+      }
+    })
     ;(UAParser as unknown as jest.Mock).mockImplementation(() => mockUAParser)
     ;(isAppleSilicon as jest.Mock).mockReturnValue(false)
   })
