@@ -1,12 +1,6 @@
 {
+  "extends": "./package-lint.config.js",
   "rules": {
-    "prefer-absolute-version-dependencies": "warning",
-    "prefer-absolute-version-devDependencies": [
-      "warning",
-      {
-        "exceptions": ["@dcl/eslint-config", "decentraland-crypto-fetch"]
-      }
-    ],
     "no-file-dependencies": "error",
     "no-git-dependencies": "error",
     "no-duplicate-properties": "error",

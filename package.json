@@ -20,18 +20,20 @@
     "test:coverage": "npm run test -- --coverage"
   },
   "dependencies": {
-    "@formatjs/intl": "3.1.8",
     "@segment/analytics-next": "1.84.3",
-    "@sentry/browser": "9.0.0",
     "isbot": "5.1.25",
     "ua-parser-js": "2.0.7"
   },
   "peerDependencies": {
+    "@formatjs/intl": "^3.1.8",
+    "@sentry/browser": "^9.0.0",
     "decentraland-crypto-fetch": ">=2.0.0",
     "react": "^18.0.0"
   },
   "devDependencies": {
     "@dcl/eslint-config": "^2.2.1",
+    "@formatjs/intl": "3.1.8",
+    "@sentry/browser": "9.0.0",
     "@testing-library/react": "14.3.1",
     "@types/jest": "29.5.14",
     "@types/node": "18.19.75",
