@@ -5,11 +5,7 @@ Segment-based analytics tracking for Decentraland dApps. Includes a context prov
 ## Import
 
 ```typescript
-import {
-  AnalyticsProvider,
-  useAnalytics,
-  usePageTracking,
-} from "@dcl/hooks"
+import { AnalyticsProvider, useAnalytics, usePageTracking } from "@dcl/hooks"
 ```
 
 ## AnalyticsProvider
@@ -20,11 +16,11 @@ Context provider that initializes Segment analytics. Wrap your app with this com
 
 ```typescript
 type AnalyticsProviderProps = {
-  writeKey: string                    // Segment write key (required)
-  userId?: string                     // Identify user on init
-  traits?: Record<string, unknown>    // User traits for identify
-  cdnUrl?: string                     // First party origin for settings and remote plugins
-  apiHost?: string                    // First party host for event delivery, no protocol
+  writeKey: string // Segment write key (required)
+  userId?: string // Identify user on init
+  traits?: Record<string, unknown> // User traits for identify
+  cdnUrl?: string // First party origin for settings and remote plugins
+  apiHost?: string // First party host for event delivery, no protocol
   children: React.ReactNode
 }
 ```
@@ -48,6 +44,10 @@ function App() {
 ### Behavior
 
 - Dynamically imports `@segment/analytics-next` on mount.
+- Pins Analytics.js Next to 1.84.3 so the shared `ajs_anonymous_id` cookie wins over conflicting origin-local storage. Future SDK upgrades must preserve this behavior and remain >=1.84.3.
+- Applications sharing identity must also upgrade older SDKs. If an application creates an anonymous ID before SDK initialization, persist it in the `ajs_anonymous_id` cookie (raw string) and the origin-local `ajs_anonymous_id` localStorage entry (JSON string). Use the SDK's writable parent-domain probe, which yields `.decentraland.org` on production subdomains; do not hardcode it for localhost or previews on public suffixes.
+- Never pass an ID read from a URL (for example sites' `anon_user_id`) to `setAnonymousId`; keep it as an event property. URL attribution belongs to the application, not hooks.
+- Segment is an internal dependency pinned exactly under the dependency policy. Review and bump this pin actively for security and compatibility updates, then publish a new hooks version; consumers do not receive SDK updates until they upgrade hooks.
 - Skips initialization when the user agent is a bot (detected via `isbot`).
 - If `userId` is provided, calls `identify()` after initialization.
 - Returns no-op functions until Segment finishes loading.
