@@ -232,6 +232,8 @@ if (!isLoading && uaData) {
 
 Context provider for Segment analytics. Wrap your app with this to enable `useAnalytics` and `usePageTracking`. Skips initialization for bots.
 
+**Identity**: Analytics.js Next >=1.84.3 is required so the shared `ajs_anonymous_id` cookie wins over conflicting origin-local storage. The provider uses default user, cookie and storage options. Applications creating pre-boot IDs must persist the raw cookie on the SDK-probed writable parent domain (`.decentraland.org` in production) and the JSON string in the origin-local `ajs_anonymous_id` localStorage entry. Keep URL IDs such as `anon_user_id` as event properties, never browser identity. The internal SDK dependency is pinned exactly; maintainers must review updates and publish a new hooks version to deliver them to consumers.
+
 ```typescript
 <AnalyticsProvider
   writeKey="SEGMENT_WRITE_KEY"           // required

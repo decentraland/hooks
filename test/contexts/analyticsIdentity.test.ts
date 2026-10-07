@@ -7,6 +7,9 @@ const LOCAL_ID = "22222222-2222-4222-8222-222222222222"
 describe("when the installed analytics SDK resolves anonymous identity", () => {
   let analytics: Analytics
 
+  // AnalyticsProvider passes no user, cookie or storage options, so this uses the same defaults.
+  // The conflict case guards against the old SDK; the other cases preserve identity invariants.
+
   afterEach(() => {
     localStorage.clear()
     document.cookie = "ajs_anonymous_id=; path=/; max-age=0"
@@ -50,6 +53,9 @@ describe("when the installed analytics SDK resolves anonymous identity", () => {
 
     it("should adopt that identity without minting another", () => {
       expect(analytics.user().anonymousId()).toBe(COOKIE_ID)
+      expect(document.cookie.split("; ")).toContain(
+        `ajs_anonymous_id=${COOKIE_ID}`
+      )
     })
   })
 })
