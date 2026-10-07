@@ -5,11 +5,7 @@ Segment-based analytics tracking for Decentraland dApps. Includes a context prov
 ## Import
 
 ```typescript
-import {
-  AnalyticsProvider,
-  useAnalytics,
-  usePageTracking,
-} from "@dcl/hooks"
+import { AnalyticsProvider, useAnalytics, usePageTracking } from "@dcl/hooks"
 ```
 
 ## AnalyticsProvider
@@ -20,11 +16,11 @@ Context provider that initializes Segment analytics. Wrap your app with this com
 
 ```typescript
 type AnalyticsProviderProps = {
-  writeKey: string                    // Segment write key (required)
-  userId?: string                     // Identify user on init
-  traits?: Record<string, unknown>    // User traits for identify
-  cdnUrl?: string                     // First party origin for settings and remote plugins
-  apiHost?: string                    // First party host for event delivery, no protocol
+  writeKey: string // Segment write key (required)
+  userId?: string // Identify user on init
+  traits?: Record<string, unknown> // User traits for identify
+  cdnUrl?: string // First party origin for settings and remote plugins
+  apiHost?: string // First party host for event delivery, no protocol
   children: React.ReactNode
 }
 ```
@@ -48,6 +44,8 @@ function App() {
 ### Behavior
 
 - Dynamically imports `@segment/analytics-next` on mount.
+- Pins Analytics.js Next to 1.84.3 so the shared `ajs_anonymous_id` cookie wins over conflicting origin-local storage. Future SDK upgrades must preserve this behavior and remain >=1.84.3.
+- Applications sharing identity must also upgrade older SDKs and persist pre-boot IDs in both stores; URL attribution must never replace browser identity.
 - Skips initialization when the user agent is a bot (detected via `isbot`).
 - If `userId` is provided, calls `identify()` after initialization.
 - Returns no-op functions until Segment finishes loading.
