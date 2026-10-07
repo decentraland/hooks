@@ -132,8 +132,26 @@ describe("useAnalytics", () => {
     it("should load analytics against Segment's own cdn and ingestion endpoint", () => {
       expect(AnalyticsBrowser.load).toHaveBeenCalledWith(
         { writeKey: mockWriteKey },
-        {}
+        {
+          // eslint-disable-next-line @typescript-eslint/naming-convention
+          integrations: {
+            "Segment.io": {
+              deliveryStrategy: {
+                strategy: "standard",
+                config: { keepalive: true },
+              },
+            },
+          },
+        }
       )
+    })
+
+    it("should deliver events with keepalive so a click that navigates away is still sent", () => {
+      const [, options] = AnalyticsBrowser.load.mock.calls[0]
+      expect(options.integrations["Segment.io"].deliveryStrategy).toEqual({
+        strategy: "standard",
+        config: { keepalive: true },
+      })
     })
   })
 
@@ -163,7 +181,16 @@ describe("useAnalytics", () => {
     it("should load analytics delivering its events to the proxy", () => {
       expect(AnalyticsBrowser.load).toHaveBeenCalledWith(expect.anything(), {
         // eslint-disable-next-line @typescript-eslint/naming-convention
-        integrations: { "Segment.io": { apiHost: "analytics.example.com/v1" } },
+        integrations: {
+          // eslint-disable-next-line @typescript-eslint/naming-convention
+          "Segment.io": {
+            apiHost: "analytics.example.com/v1",
+            deliveryStrategy: {
+              strategy: "standard",
+              config: { keepalive: true },
+            },
+          },
+        },
       })
     })
   })
@@ -194,7 +221,17 @@ describe("useAnalytics", () => {
       expect(consoleWarn).toHaveBeenCalled()
       expect(AnalyticsBrowser.load).toHaveBeenCalledWith(
         { writeKey: mockWriteKey },
-        {}
+        {
+          // eslint-disable-next-line @typescript-eslint/naming-convention
+          integrations: {
+            "Segment.io": {
+              deliveryStrategy: {
+                strategy: "standard",
+                config: { keepalive: true },
+              },
+            },
+          },
+        }
       )
     })
   })
@@ -247,7 +284,7 @@ describe("useAnalytics", () => {
       expect(loaded).toHaveLength(2)
       expect(AnalyticsBrowser.load).toHaveBeenLastCalledWith(
         { writeKey: mockWriteKey, cdnURL: "https://two.example.com" },
-        {}
+        expect.anything()
       )
     })
 

@@ -25,6 +25,11 @@ import type {
 // Integration key analytics-next reserves for its own ingestion plugin
 const SEGMENT_IO = "Segment.io"
 
+const KEEPALIVE_DELIVERY = {
+  strategy: "standard",
+  config: { keepalive: true },
+} as const
+
 const AnalyticsContext = createContext<AnalyticsContextType | null>(null)
 
 const AnalyticsProvider: React.FC<AnalyticsProviderProps> = (
@@ -65,12 +70,17 @@ const AnalyticsProvider: React.FC<AnalyticsProviderProps> = (
             settings.cdnURL = resolvedCdnUrl
           }
 
-          const options: InitOptions = {}
+          // keepalive lets an event fired right before a navigation (a link click that loads the next
+          // page in the same tab) finish sending after the page unloads, instead of being cancelled
+          // with it. analytics-next leaves it off by default.
           const resolvedApiHost = resolveApiHost(apiHost)
-          if (resolvedApiHost) {
-            options.integrations = {
-              [SEGMENT_IO]: { apiHost: resolvedApiHost },
-            }
+          const options: InitOptions = {
+            integrations: {
+              [SEGMENT_IO]: {
+                ...(resolvedApiHost ? { apiHost: resolvedApiHost } : {}),
+                deliveryStrategy: KEEPALIVE_DELIVERY,
+              },
+            },
           }
 
           const analytics = AnalyticsBrowser.load(settings, options)
