@@ -25,7 +25,14 @@ type AnalyticsProviderProps = {
 type TrackPayload = EventProperties
 
 type AnalyticsContextType = {
+  /** Segment fetched its settings and registered its plugins, so a new call is dispatched right away. */
   isInitialized: boolean
+  /**
+   * Calls reach Segment: true from the moment the instance exists, when calls made while it still loads are
+   * buffered and sent once it is ready. False with no write key, for bots, before the SDK import and after a
+   * failed load. Optional so hand-built context values keep compiling; read `isAvailable ?? isInitialized`.
+   */
+  isAvailable?: boolean
   track: (event: string, payload?: TrackPayload) => void
   identify: (userId: string, traits?: Record<string, unknown>) => void
   page: (name: string, props?: Record<string, unknown>) => void

@@ -41,7 +41,9 @@ const AnalyticsProvider: React.FC<AnalyticsProviderProps> = (
   // cleanup, so a load still awaiting its import when the provider is reconfigured or unmounted sees a
   // stale generation and abandons instead of taking over.
   const generationRef = useRef(0)
-  const [isInitialized, setIsInitialized] = useState(false)
+  // `loading`: the instance exists and buffers calls, but analytics.js has not fetched its settings and
+  // registered its plugins yet. `ready`: it has, and `isInitialized` reports true.
+  const [status, setStatus] = useState<"idle" | "loading" | "ready">("idle")
 
   useEffect(() => {
     const generation = ++generationRef.current
@@ -89,15 +91,30 @@ const AnalyticsProvider: React.FC<AnalyticsProviderProps> = (
             analytics.identify(userId, traits)
           }
 
-          // Published last: everything above is synchronous, so a throw leaves neither the ref nor
-          // the registry holding an instance this run never finished setting up.
+          // Published once everything above, which is synchronous, succeeded: a throw leaves neither
+          // the ref nor the registry holding an instance this run never finished setting up.
           analyticsRef.current = analytics
           registerAnalyticsInstance(analytics)
-          setIsInitialized(true)
+          setStatus("loading")
+
+          // The instance buffers calls straight away but only sends them once analytics.js has fetched
+          // its settings and registered its plugins. Reporting ready before that tells a caller that an
+          // event fired right before a navigation will go out, while it can still be sitting in the
+          // buffer when the page unloads.
+          await analytics
+
+          if (isCurrent()) {
+            setStatus("ready")
+          }
         } catch (error) {
           console.error("[Analytics] Failed to initialize:", error)
           if (isCurrent()) {
+            const instance = analyticsRef.current
+            if (instance) {
+              unregisterAnalyticsInstance(instance)
+            }
             analyticsRef.current = null
+            setStatus("idle")
           }
         }
       })()
@@ -110,22 +127,20 @@ const AnalyticsProvider: React.FC<AnalyticsProviderProps> = (
         unregisterAnalyticsInstance(instance)
         analyticsRef.current = null
       }
-      setIsInitialized(false)
+      setStatus("idle")
     }
   }, [writeKey, userId, traits, cdnUrl, apiHost])
 
-  const contextValue = useMemo(() => {
-    if (!analyticsRef.current || !isInitialized) {
-      return {
-        isInitialized: false,
-        track: () => {},
-        identify: () => {},
-        page: () => {},
-      }
+  // Calls are delegated as soon as the instance exists, so one made while it loads is buffered and sent
+  // once it is ready instead of being dropped. Only `isInitialized` waits for the load. The methods keep
+  // their identity from `loading` to `ready`, so an effect that depends on them does not fire twice.
+  const isAvailable = status !== "idle"
+  const methods = useMemo(() => {
+    if (!isAvailable) {
+      return { track: () => {}, identify: () => {}, page: () => {} }
     }
 
     return {
-      isInitialized: true,
       track: (event: string, payload?: TrackPayload) => {
         analyticsRef.current?.track(event, payload)
       },
@@ -136,7 +151,12 @@ const AnalyticsProvider: React.FC<AnalyticsProviderProps> = (
         analyticsRef.current?.page(name, props)
       },
     }
-  }, [isInitialized])
+  }, [isAvailable])
+
+  const contextValue = useMemo(
+    () => ({ isInitialized: status === "ready", isAvailable, ...methods }),
+    [status, isAvailable, methods]
+  )
 
   return (
     <AnalyticsContext.Provider value={contextValue}>

@@ -3,6 +3,7 @@ import { act, cleanup, render, renderHook } from "@testing-library/react/pure"
 import { AnalyticsProvider } from "../../src/contexts/analytics/AnalyticsProvider"
 import { getAnalytics } from "../../src/contexts/analytics/registry"
 import { useAnalytics } from "../../src/hooks/useAnalytics"
+import { usePageTracking } from "../../src/hooks/usePageTracking"
 import type { AnalyticsContextType } from "../../src/contexts/analytics/types"
 
 // Mock Segment Analytics
@@ -114,6 +115,192 @@ describe("useAnalytics", () => {
           eventName,
           eventProperties
         )
+      })
+    })
+  })
+
+  describe("when analytics.js is still loading its settings and plugins", () => {
+    const { AnalyticsBrowser } = jest.requireMock("@segment/analytics-next")
+    let finishLoading: (outcome: "resolve" | "reject") => Promise<void>
+
+    beforeEach(async () => {
+      let settle: { resolve: () => void; reject: (error: Error) => void }
+      const loading = new Promise<void>((resolve, reject) => {
+        settle = { resolve, reject }
+      })
+      AnalyticsBrowser.load.mockReturnValueOnce({
+        ...mockAnalyticsBrowser,
+        then: (onLoaded: () => void, onFailed: (error: Error) => void) =>
+          loading.then(onLoaded, onFailed),
+      })
+      finishLoading = async (outcome) => {
+        await act(async () => {
+          if (outcome === "resolve") {
+            settle.resolve()
+          } else {
+            settle.reject(new Error("settings failed"))
+          }
+        })
+      }
+      const rendered = renderHook(
+        () => {
+          usePageTracking("/landing")
+          return useAnalytics()
+        },
+        {
+          wrapper: ({ children }) =>
+            AnalyticsProvider({ writeKey: mockWriteKey, children }),
+        }
+      )
+      result = rendered.result
+      await act(async () => {})
+    })
+
+    it("should return non-initialized state", () => {
+      expect(result.current.isInitialized).toBe(false)
+    })
+
+    it("should report calls as available, buffered until it is ready", () => {
+      expect(result.current.isAvailable).toBe(true)
+    })
+
+    it("should already hand the page view to the instance to buffer", () => {
+      expect(mockAnalyticsMethods.page).toHaveBeenCalledTimes(1)
+      expect(mockAnalyticsMethods.page).toHaveBeenCalledWith(
+        "/landing",
+        undefined
+      )
+    })
+
+    it("should already expose the buffering instance to code outside react", () => {
+      expect(getAnalytics()).not.toBeNull()
+    })
+
+    describe("and a consumer tracks an event before it finishes", () => {
+      beforeEach(() => {
+        result.current.track("early_event", { test: "data" })
+      })
+
+      it("should hand it to the instance to buffer instead of dropping it", () => {
+        expect(mockAnalyticsMethods.track).toHaveBeenCalledWith("early_event", {
+          test: "data",
+        })
+      })
+    })
+
+    describe("and it finishes loading", () => {
+      beforeEach(async () => {
+        await finishLoading("resolve")
+      })
+
+      it("should return initialized state", () => {
+        expect(result.current.isInitialized).toBe(true)
+      })
+
+      it("should not send the page view again", () => {
+        expect(mockAnalyticsMethods.page).toHaveBeenCalledTimes(1)
+      })
+    })
+
+    describe("and it fails to load", () => {
+      let consoleError: jest.SpyInstance
+
+      beforeEach(async () => {
+        consoleError = jest.spyOn(console, "error").mockImplementation(() => {})
+        await finishLoading("reject")
+      })
+
+      afterEach(() => {
+        consoleError.mockRestore()
+      })
+
+      it("should keep returning non-initialized state", () => {
+        expect(result.current.isInitialized).toBe(false)
+      })
+
+      it("should stop exposing the instance to code outside react", () => {
+        expect(getAnalytics()).toBeNull()
+      })
+
+      it("should no-op the calls consumers make", () => {
+        result.current.track("late_event")
+        expect(mockAnalyticsMethods.track).not.toHaveBeenCalled()
+      })
+    })
+  })
+
+  describe("when the configuration changes while the first load is still pending", () => {
+    const { AnalyticsBrowser } = jest.requireMock("@segment/analytics-next")
+    let settleFirst: { resolve: () => void; reject: (error: Error) => void }
+    let second: typeof mockAnalyticsBrowser
+    let consoleError: jest.SpyInstance
+
+    const probeResult: { current: AnalyticsContextType | null } = {
+      current: null,
+    }
+    const probe = () => {
+      probeResult.current = useAnalytics()
+      return null
+    }
+    const renderWithWriteKey = (writeKey: string) =>
+      React.createElement(AnalyticsProvider, {
+        writeKey,
+        children: React.createElement(probe),
+      })
+
+    beforeEach(async () => {
+      consoleError = jest.spyOn(console, "error").mockImplementation(() => {})
+      const firstLoading = new Promise<void>((resolve, reject) => {
+        settleFirst = { resolve, reject }
+      })
+      second = { ...mockAnalyticsBrowser, track: jest.fn() }
+      AnalyticsBrowser.load
+        .mockReturnValueOnce({
+          ...mockAnalyticsBrowser,
+          then: (onLoaded: () => void, onFailed: (error: Error) => void) =>
+            firstLoading.then(onLoaded, onFailed),
+        })
+        .mockReturnValueOnce({
+          ...second,
+          then: () => new Promise<void>(() => {}),
+        })
+
+      const { rerender } = render(renderWithWriteKey(mockWriteKey))
+      await act(async () => {})
+      rerender(renderWithWriteKey("other-write-key"))
+      await act(async () => {})
+    })
+
+    afterEach(() => {
+      consoleError.mockRestore()
+    })
+
+    describe("and the first load resolves late", () => {
+      beforeEach(async () => {
+        await act(async () => {
+          settleFirst.resolve()
+        })
+      })
+
+      it("should not report ready for the newer run, which is still loading", () => {
+        expect(probeResult.current?.isInitialized).toBe(false)
+      })
+
+      it("should keep the newer instance registered", () => {
+        expect(getAnalytics()).toMatchObject({ track: second.track })
+      })
+    })
+
+    describe("and the first load rejects late", () => {
+      beforeEach(async () => {
+        await act(async () => {
+          settleFirst.reject(new Error("settings failed"))
+        })
+      })
+
+      it("should keep the newer instance registered and available", () => {
+        expect(getAnalytics()).toMatchObject({ track: second.track })
+        expect(probeResult.current?.isAvailable).toBe(true)
       })
     })
   })

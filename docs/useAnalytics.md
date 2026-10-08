@@ -50,7 +50,8 @@ function App() {
 - Segment is an internal dependency pinned exactly under the dependency policy. Review and bump this pin actively for security and compatibility updates, then publish a new hooks version; consumers do not receive SDK updates until they upgrade hooks.
 - Skips initialization when the user agent is a bot (detected via `isbot`).
 - If `userId` is provided, calls `identify()` after initialization.
-- Returns no-op functions until Segment finishes loading.
+- `track`, `identify` and `page` are no-ops until the SDK import finishes. From then on they reach the instance, which buffers them while it loads its settings and plugins and sends them once it is ready.
+- `isInitialized` turns true only after settings and plugins are loaded. It never does when the settings request fails (for example, blocked by an ad blocker): the methods go back to no-ops and `isAvailable` turns false.
 
 ### First party proxy
 
@@ -84,7 +85,8 @@ Access analytics tracking functions. Must be used inside `AnalyticsProvider`.
 
 ```typescript
 function useAnalytics(): {
-  isInitialized: boolean
+  isInitialized: boolean // Segment loaded its settings and plugins: new calls are dispatched right away
+  isAvailable?: boolean // calls reach Segment, buffered while it loads; false before the import, for bots, with no write key or after a failed load
   track: (event: string, payload?: EventProperties) => void
   identify: (userId: string, traits?: Record<string, unknown>) => void
   page: (name: string, props?: Record<string, unknown>) => void
@@ -125,16 +127,15 @@ analytics.identify("user-123", {
 
 ```typescript
 function MyPage() {
-  const analytics = useAnalytics()
+  const { page } = useAnalytics()
 
   useEffect(() => {
-    if (analytics.isInitialized) {
-      analytics.page("My Page", {
-        category: "Content",
-        section: "Main",
-      })
-    }
-  }, [analytics])
+    // No guard needed: a call made while Segment loads is buffered and sent once it is ready.
+    page("My Page", {
+      category: "Content",
+      section: "Main",
+    })
+  }, [page])
 
   return <div>Page Content</div>
 }
@@ -147,7 +148,7 @@ function MyPage() {
 Automatically tracks page views. Two call shapes:
 
 1. `usePageTracking(path)` — fires `page(path)` whenever `path` changes.
-2. `usePageTracking(name, properties)` — fires `page(name, properties)` only after analytics is initialized AND `name` is a non-empty string. Use this when the page title is resolved asynchronously (e.g. from a CMS via Helmet + RTK Query) so the event lands AFTER `document.title` updates, avoiding the SPA race that otherwise lets Segment auto-capture the previous route's title.
+2. `usePageTracking(name, properties)` — fires `page(name, properties)` only once analytics is available AND `name` is a non-empty string. Use this when the page title is resolved asynchronously (e.g. from a CMS via Helmet + RTK Query) so the event lands AFTER `document.title` updates, avoiding the SPA race that otherwise lets Segment auto-capture the previous route's title.
 
 ### Signature
 
@@ -161,7 +162,8 @@ function usePageTracking(
 
 ### Behavior
 
-- Skips the call when `useAnalytics().isInitialized` is `false` (no wasted work while Segment is still loading).
+- Fires once analytics is available (`isAvailable`), so a page view made while Segment loads its settings is buffered and sent when it is ready, even if the visitor moves to another route in-app before then. A full page unload before settings load still loses it.
+- Skips the call while analytics is not available (before the SDK import, for bots, with no write key, after a failed load).
 - Skips the call when `name` is `undefined` or an empty string — useful while async data resolves.
 - Re-fires when `name` or properties change; deduplicates identical re-renders.
 
@@ -218,6 +220,7 @@ function TrackableButton() {
   const analytics = useAnalytics()
 
   const handleClick = () => {
+    // Only needed when the caller must know Segment can deliver now, e.g. right before a same-tab navigation.
     if (analytics.isInitialized) {
       analytics.track("Profile Updated", {
         updateType: "information",
@@ -248,11 +251,12 @@ function App() {
 
 - Place `AnalyticsProvider` at the top of your component tree.
 - Use `usePageTracking` in layout components or route wrappers for automatic page tracking.
-- Check `analytics.isInitialized` before calling methods if you need to guard against no-ops.
+- Call the methods without a guard: a call made while Segment loads is buffered, not dropped.
+- Check `analytics.isInitialized` only when the caller needs Segment able to deliver right now, e.g. a click that navigates in the same tab. Until then the event would sit in the buffer and be lost with the page, so fall back to another transport (a beacon). Do not gate ordinary calls on it: it stays false for the whole session when the settings request is blocked.
 
 ## Pitfalls
 
 - `useAnalytics` throws an error if used outside of `AnalyticsProvider`.
-- Before initialization completes, `track`, `identify`, and `page` are no-ops (they do nothing, no error).
+- Before the SDK import finishes, and after a failed load, `track`, `identify`, and `page` are no-ops (they do nothing, no error).
 - Bot detection is automatic -- analytics will not initialize for bots.
 - `@segment/analytics-next` is dynamically imported, so it adds no bundle cost if `AnalyticsProvider` is not rendered.
