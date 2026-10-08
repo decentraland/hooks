@@ -127,12 +127,20 @@ describe("analytics utils", () => {
     })
 
     describe("when no user agent is given", () => {
-      it("should check the current browser's", () => {
-        const userAgentSpy = jest
+      let userAgentSpy: jest.SpyInstance
+
+      beforeEach(() => {
+        userAgentSpy = jest
           .spyOn(navigator, "userAgent", "get")
           .mockReturnValue("curl/8.4.0")
-        expect(isBotClient()).toBe(true)
+      })
+
+      afterEach(() => {
         userAgentSpy.mockRestore()
+      })
+
+      it("should check the current browser's", () => {
+        expect(isBotClient()).toBe(true)
       })
     })
   })
