@@ -241,12 +241,13 @@ Context provider for Segment analytics. Wrap your app with this to enable `useAn
   traits={{ name: "John" }}              // optional
   cdnUrl="https://analytics.example.org" // optional -- first party origin for settings and remote plugins
   apiHost="analytics.example.org/v1"     // optional -- first party host for event delivery, no protocol
+  deliveryStrategy={{ strategy: "batching" }} // optional -- defaults to standard delivery with keepalive
 >
   {children}
 </AnalyticsProvider>
 ```
 
-**Gotchas**: `cdnUrl` and `apiHost` serve Segment from a first party proxy, since ad blockers drop `cdn.segment.com` and `api.segment.io`. They are independent, so configure only the one the proxy serves. Values that are not valid https urls (or the app's own origin) are ignored with a warning and fall back to Segment's own endpoints. Code outside React reads the loaded instance with `getAnalytics()` and applies the same bot rule with `isBotClient(userAgent?)`.
+**Gotchas**: `cdnUrl` and `apiHost` serve Segment from a first party proxy, since ad blockers drop `cdn.segment.com` and `api.segment.io`. They are independent, so configure only the one the proxy serves. Values that are not valid https urls (or the app's own origin) are ignored with a warning and fall back to Segment's own endpoints. `deliveryStrategy` replaces the keepalive default entirely and is read only at load time. Code outside React reads the loaded instance with `getAnalytics()` and applies the same bot rule with `isBotClient(userAgent?)`.
 
 ---
 
@@ -256,7 +257,8 @@ Access analytics tracking functions. Must be inside `AnalyticsProvider`.
 
 ```typescript
 function useAnalytics(): {
-  isInitialized: boolean
+  isInitialized: boolean // Segment loaded its settings and plugins: new calls are dispatched right away
+  isAvailable?: boolean // calls reach Segment, buffered while it loads; false before the import, for bots, with no write key or after a failed load
   track: (event: string, payload?: EventProperties) => void
   identify: (userId: string, traits?: Record<string, unknown>) => void
   page: (name: string, props?: Record<string, unknown>) => void
@@ -270,7 +272,7 @@ const analytics = useAnalytics()
 analytics.track("Button Clicked", { buttonId: "submit" })
 ```
 
-**Gotchas**: Throws if used outside `AnalyticsProvider`. Returns no-op functions when `isInitialized` is false (before Segment loads).
+**Gotchas**: Throws if used outside `AnalyticsProvider`. Methods are no-ops until the SDK import finishes, then buffered while Segment loads its settings. `isInitialized` turns true only once settings and plugins are loaded: gate on it only when an event must be deliverable right now (before a same-tab navigation), not to avoid no-ops. `usePageTracking` fires on `isAvailable`.
 
 ---
 
