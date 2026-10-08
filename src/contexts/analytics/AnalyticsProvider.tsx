@@ -47,8 +47,12 @@ const AnalyticsProvider: React.FC<AnalyticsProviderProps> = (
   const analyticsRef = useRef<AnalyticsBrowser | null>(null)
   // Kept out of the effect's dependencies: callers tend to pass it as an inline object, which would
   // reload analytics on every render. It only matters at load time.
+  // Synced in an effect declared before the load effect, which runs first, so a render React discards
+  // never leaks its value into a load.
   const deliveryStrategyRef = useRef(deliveryStrategy)
-  deliveryStrategyRef.current = deliveryStrategy
+  useEffect(() => {
+    deliveryStrategyRef.current = deliveryStrategy
+  })
   // Identifies the run that owns the instance. Advanced synchronously on every run AND on every
   // cleanup, so a load still awaiting its import when the provider is reconfigured or unmounted sees a
   // stale generation and abandons instead of taking over.

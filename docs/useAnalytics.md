@@ -21,6 +21,7 @@ type AnalyticsProviderProps = {
   traits?: Record<string, unknown> // User traits for identify
   cdnUrl?: string // First party origin for settings and remote plugins
   apiHost?: string // First party host for event delivery, no protocol
+  deliveryStrategy?: AnalyticsDeliveryStrategy // Defaults to standard delivery with keepalive
   children: React.ReactNode
 }
 ```
@@ -73,6 +74,14 @@ function App() {
 Both are optional and independent, so configure only the one your proxy actually serves. `cdnUrl` is an origin (the SDK appends `/v1/projects/<writeKey>/settings` to it), while `apiHost` is a host plus base path without a protocol (the SDK prepends `https://` and appends the method path). A `https://` prefix on `apiHost` is accepted and stripped.
 
 Both decide where a third party script is loaded from and where every event is delivered, so they are meant to be trusted values coming from the build configuration of the app, never from user input. A value that is not a valid url, or that is not served over https unless it belongs to the app's own origin, is ignored with a warning and analytics falls back to Segment's own endpoints.
+
+### Delivery strategy
+
+Events go out with standard delivery and `keepalive`, so an event fired right before a same-tab navigation still finishes sending after the page unloads. Browsers cap all in-flight keepalive requests of a page at 64KB, so an app that sends large or very frequent events can pass `deliveryStrategy={{ strategy: "batching" }}` instead.
+
+- A strategy replaces the default entirely: `{ strategy: "standard", config: { priority: "high" } }` turns keepalive off.
+- Batching already flushes with keepalive when the page unloads, so it does not lose an event fired before a navigation. Do not add `keepalive: true` to it: every batch would become a keepalive request and the 64KB pressure comes back.
+- The strategy is read when analytics loads; changing it afterwards does not reload analytics.
 
 ---
 
