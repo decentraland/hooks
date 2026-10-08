@@ -229,6 +229,82 @@ describe("useAnalytics", () => {
     })
   })
 
+  describe("when the configuration changes while the first load is still pending", () => {
+    const { AnalyticsBrowser } = jest.requireMock("@segment/analytics-next")
+    let settleFirst: { resolve: () => void; reject: (error: Error) => void }
+    let second: typeof mockAnalyticsBrowser
+    let consoleError: jest.SpyInstance
+
+    const probeResult: { current: AnalyticsContextType | null } = {
+      current: null,
+    }
+    const probe = () => {
+      probeResult.current = useAnalytics()
+      return null
+    }
+    const renderWithWriteKey = (writeKey: string) =>
+      React.createElement(AnalyticsProvider, {
+        writeKey,
+        children: React.createElement(probe),
+      })
+
+    beforeEach(async () => {
+      consoleError = jest.spyOn(console, "error").mockImplementation(() => {})
+      const firstLoading = new Promise<void>((resolve, reject) => {
+        settleFirst = { resolve, reject }
+      })
+      second = { ...mockAnalyticsBrowser, track: jest.fn() }
+      AnalyticsBrowser.load
+        .mockReturnValueOnce({
+          ...mockAnalyticsBrowser,
+          then: (onLoaded: () => void, onFailed: (error: Error) => void) =>
+            firstLoading.then(onLoaded, onFailed),
+        })
+        .mockReturnValueOnce({
+          ...second,
+          then: () => new Promise<void>(() => {}),
+        })
+
+      const { rerender } = render(renderWithWriteKey(mockWriteKey))
+      await act(async () => {})
+      rerender(renderWithWriteKey("other-write-key"))
+      await act(async () => {})
+    })
+
+    afterEach(() => {
+      consoleError.mockRestore()
+    })
+
+    describe("and the first load resolves late", () => {
+      beforeEach(async () => {
+        await act(async () => {
+          settleFirst.resolve()
+        })
+      })
+
+      it("should not report ready for the newer run, which is still loading", () => {
+        expect(probeResult.current?.isInitialized).toBe(false)
+      })
+
+      it("should keep the newer instance registered", () => {
+        expect(getAnalytics()).toMatchObject({ track: second.track })
+      })
+    })
+
+    describe("and the first load rejects late", () => {
+      beforeEach(async () => {
+        await act(async () => {
+          settleFirst.reject(new Error("settings failed"))
+        })
+      })
+
+      it("should keep the newer instance registered and available", () => {
+        expect(getAnalytics()).toMatchObject({ track: second.track })
+        expect(probeResult.current?.isAvailable).toBe(true)
+      })
+    })
+  })
+
   describe("when no first party proxy is configured", () => {
     const { AnalyticsBrowser } = jest.requireMock("@segment/analytics-next")
 
