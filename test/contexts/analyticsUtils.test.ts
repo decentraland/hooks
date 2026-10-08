@@ -1,4 +1,5 @@
 import {
+  isBotClient,
   resolveApiHost,
   resolveCdnUrl,
 } from "../../src/contexts/analytics/utils"
@@ -100,6 +101,37 @@ describe("analytics utils", () => {
       it("should warn about it and ignore it", () => {
         expect(resolveApiHost(apiHost)).toBeUndefined()
         expect(consoleWarn).toHaveBeenCalled()
+      })
+    })
+  })
+
+  describe("isBotClient", () => {
+    describe("when the user agent is a crawler", () => {
+      it("should return true", () => {
+        expect(
+          isBotClient(
+            "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+          )
+        ).toBe(true)
+      })
+    })
+
+    describe("when the user agent is a regular browser", () => {
+      it("should return false", () => {
+        expect(
+          isBotClient(
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
+          )
+        ).toBe(false)
+      })
+    })
+
+    describe("when no user agent is given", () => {
+      it("should check the current browser's", () => {
+        jest
+          .spyOn(navigator, "userAgent", "get")
+          .mockReturnValueOnce("curl/8.4.0")
+        expect(isBotClient()).toBe(true)
       })
     })
   })

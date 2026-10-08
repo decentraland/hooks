@@ -1,3 +1,5 @@
+import { isbot } from "isbot"
+
 const PROTOCOL_PREFIX = /^[a-z][a-z0-9+.-]*:\/\//i
 const TRAILING_SLASHES = /\/+$/
 
@@ -68,4 +70,13 @@ function resolveApiHost(apiHost?: string): string | undefined {
   )
 }
 
-export { resolveApiHost, resolveCdnUrl }
+/**
+ * Whether the current client is a crawler or another bot, which the provider never loads analytics for. Exported so
+ * code that sends events without the provider (a beacon fired before analytics loads) applies the same rule instead
+ * of depending on `isbot` itself.
+ */
+function isBotClient(userAgent: string = navigator.userAgent): boolean {
+  return isbot(userAgent)
+}
+
+export { isBotClient, resolveApiHost, resolveCdnUrl }
