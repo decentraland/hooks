@@ -1,4 +1,5 @@
 import {
+  isBotClient,
   resolveApiHost,
   resolveCdnUrl,
 } from "../../src/contexts/analytics/utils"
@@ -101,6 +102,54 @@ describe("analytics utils", () => {
         expect(resolveApiHost(apiHost)).toBeUndefined()
         expect(consoleWarn).toHaveBeenCalled()
       })
+    })
+  })
+
+  describe("isBotClient", () => {
+    describe("when the user agent is a crawler", () => {
+      it("should return true", () => {
+        expect(
+          isBotClient(
+            "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+          )
+        ).toBe(true)
+      })
+    })
+
+    describe("when the user agent is a regular browser", () => {
+      it("should return false", () => {
+        expect(
+          isBotClient(
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
+          )
+        ).toBe(false)
+      })
+    })
+
+    describe("when the user agent is missing", () => {
+      let userAgentSpy: jest.SpyInstance
+
+      beforeEach(() => {
+        // A bot user agent on the runtime, so a fallback to it would show up as `true`.
+        userAgentSpy = jest
+          .spyOn(navigator, "userAgent", "get")
+          .mockReturnValue("curl/8.4.0")
+      })
+
+      afterEach(() => {
+        userAgentSpy.mockRestore()
+      })
+
+      it.each([
+        ["undefined", undefined],
+        ["null", null],
+        ["an empty string", ""],
+      ])(
+        "should return false for %s without reading the runtime's",
+        (_, userAgent) => {
+          expect(isBotClient(userAgent)).toBe(false)
+        }
+      )
     })
   })
 })

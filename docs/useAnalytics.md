@@ -49,7 +49,7 @@ function App() {
 - Applications sharing identity must also upgrade older SDKs. If an application creates an anonymous ID before SDK initialization, persist it in the `ajs_anonymous_id` cookie (raw string) and the origin-local `ajs_anonymous_id` localStorage entry (JSON string). Use the SDK's writable parent-domain probe, which yields `.decentraland.org` on production subdomains; do not hardcode it for localhost or previews on public suffixes.
 - Never pass an ID read from a URL (for example sites' `anon_user_id`) to `setAnonymousId`; keep it as an event property. URL attribution belongs to the application, not hooks.
 - Segment is an internal dependency pinned exactly under the dependency policy. Review and bump this pin actively for security and compatibility updates, then publish a new hooks version; consumers do not receive SDK updates until they upgrade hooks.
-- Skips initialization when the user agent is a bot (detected via `isbot`).
+- Skips initialization when the user agent is a bot (`isBotClient`, below).
 - If `userId` is provided, calls `identify()` after initialization.
 - `track`, `identify` and `page` are no-ops until the SDK import finishes. From then on they reach the instance, which buffers them while it loads its settings and plugins and sends them once it is ready.
 - `isInitialized` turns true only after settings and plugins are loaded. It never does when the settings request fails (for example, blocked by an ad blocker): the methods go back to no-ops and `isAvailable` turns false.
@@ -83,6 +83,11 @@ Events go out with standard delivery and `keepalive`, so an event fired right be
 - A strategy replaces the default entirely: `{ strategy: "standard", config: { priority: "high" } }` turns keepalive off.
 - Batching already flushes with keepalive when the page unloads, so it normally does not lose an event fired before a navigation. That flush shares the same 64KB cap, so a large batch `size` or large payloads can still drop part of it. Do not add `keepalive: true` to batching: every batch would become a keepalive request and the 64KB pressure comes back for the whole session.
 - The strategy is read when analytics loads; changing it afterwards does not reload analytics.
+
+### Outside React
+
+- `getAnalytics()` returns the instance the mounted provider loaded, or `null` when there is none, for code that cannot reach the context.
+- `isBotClient(userAgent)` is the check the provider uses to skip bots. Code that sends events without the provider (a beacon fired before analytics loads) should apply it too: `isBotClient(navigator.userAgent)` in a browser, `isBotClient(req.headers["user-agent"])` on a server. The argument is required and never read from the runtime, and a missing user agent (`null`, `undefined`, empty) returns `false`.
 
 ---
 

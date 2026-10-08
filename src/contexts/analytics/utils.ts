@@ -1,3 +1,5 @@
+import { isbot } from "isbot"
+
 const PROTOCOL_PREFIX = /^[a-z][a-z0-9+.-]*:\/\//i
 const TRAILING_SLASHES = /\/+$/
 
@@ -68,4 +70,18 @@ function resolveApiHost(apiHost?: string): string | undefined {
   )
 }
 
-export { resolveApiHost, resolveCdnUrl }
+/**
+ * Whether the current client is a crawler or another bot, which the provider never loads analytics for. Exported so
+ * code that sends events without the provider (a beacon fired before analytics loads) applies the same rule instead
+ * of depending on `isbot` itself.
+ *
+ * The user agent is required and never read from the runtime: in a browser pass `navigator.userAgent`, on a server
+ * the request's header. A server fallback would read Node's own `Node.js/<major>` agent (Node 21+), which `isbot`
+ * flags. A missing user agent (`null`, `undefined` or empty) is not treated as a bot, stated here rather than left to
+ * whatever `isbot` returns for an empty string, which a minor release could change.
+ */
+function isBotClient(userAgent: string | null | undefined): boolean {
+  return userAgent ? isbot(userAgent) : false
+}
+
+export { isBotClient, resolveApiHost, resolveCdnUrl }

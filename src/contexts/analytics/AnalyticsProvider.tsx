@@ -10,12 +10,11 @@ import {
   type AnalyticsBrowserSettings,
   type InitOptions,
 } from "@segment/analytics-next"
-import { isbot } from "isbot"
 import {
   registerAnalyticsInstance,
   unregisterAnalyticsInstance,
 } from "./registry"
-import { resolveApiHost, resolveCdnUrl } from "./utils"
+import { isBotClient, resolveApiHost, resolveCdnUrl } from "./utils"
 import type {
   AnalyticsContextType,
   AnalyticsProviderProps,
@@ -67,7 +66,7 @@ const AnalyticsProvider: React.FC<AnalyticsProviderProps> = (
 
     if (!writeKey) {
       console.log("[Analytics] No writeKey provided")
-    } else if (isbot(navigator.userAgent)) {
+    } else if (isBotClient(navigator.userAgent)) {
       console.log("[Analytics] Skipping load: bot detected")
     } else {
       void (async () => {
