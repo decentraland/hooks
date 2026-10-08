@@ -8,17 +8,10 @@ const useAnalytics = (): AnalyticsContextType => {
     throw new Error("useAnalytics must be used within AnalyticsProvider")
   }
 
-  if (!analyticsContext.isInitialized) {
-    return {
-      isInitialized: false,
-      track: () => {},
-      identify: () => {},
-      page: () => {},
-    }
-  }
-
+  // The provider already hands out no-op methods while there is no instance, and buffering ones while
+  // it loads: passing them through keeps a call made during the load from being dropped here.
   return {
-    isInitialized: true,
+    isInitialized: analyticsContext.isInitialized,
     track: analyticsContext.track,
     identify: analyticsContext.identify,
     page: analyticsContext.page,

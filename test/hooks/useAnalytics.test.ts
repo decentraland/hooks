@@ -157,6 +157,18 @@ describe("useAnalytics", () => {
       expect(getAnalytics()).not.toBeNull()
     })
 
+    describe("and a consumer tracks an event before it finishes", () => {
+      beforeEach(() => {
+        result.current.track("early_event", { test: "data" })
+      })
+
+      it("should hand it to the instance to buffer instead of dropping it", () => {
+        expect(mockAnalyticsMethods.track).toHaveBeenCalledWith("early_event", {
+          test: "data",
+        })
+      })
+    })
+
     describe("and it finishes loading", () => {
       beforeEach(async () => {
         await finishLoading("resolve")
@@ -185,6 +197,11 @@ describe("useAnalytics", () => {
 
       it("should stop exposing the instance to code outside react", () => {
         expect(getAnalytics()).toBeNull()
+      })
+
+      it("should no-op the calls consumers make", () => {
+        result.current.track("late_event")
+        expect(mockAnalyticsMethods.track).not.toHaveBeenCalled()
       })
     })
   })
