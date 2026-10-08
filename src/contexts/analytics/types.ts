@@ -35,9 +35,10 @@ type AnalyticsProviderProps = {
    * that sends large or very frequent events can pass its own strategy, e.g. `{ strategy: "batching" }`.
    *
    * A strategy replaces the default entirely: `{ strategy: "standard", config: { priority: "high" } }` turns
-   * keepalive off. Batching already flushes with keepalive when the page unloads, so it does not lose an event fired
-   * right before a navigation; adding `keepalive: true` to it makes every batch a keepalive request and brings the
-   * 64KB pressure back.
+   * keepalive off. Batching already flushes with keepalive when the page unloads, so it normally does not lose an event
+   * fired right before a navigation. The unload flush shares the same 64KB cap, though, so a large batch `size` or
+   * large payloads can still drop part of it; adding `keepalive: true` to batching makes every batch a keepalive
+   * request and brings the 64KB pressure back for the whole session.
    *
    * Read when analytics loads: changing it afterwards does not reload analytics.
    */

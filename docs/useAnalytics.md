@@ -80,7 +80,7 @@ Both decide where a third party script is loaded from and where every event is d
 Events go out with standard delivery and `keepalive`, so an event fired right before a same-tab navigation still finishes sending after the page unloads. Browsers cap all in-flight keepalive requests of a page at 64KB, so an app that sends large or very frequent events can pass `deliveryStrategy={{ strategy: "batching" }}` instead.
 
 - A strategy replaces the default entirely: `{ strategy: "standard", config: { priority: "high" } }` turns keepalive off.
-- Batching already flushes with keepalive when the page unloads, so it does not lose an event fired before a navigation. Do not add `keepalive: true` to it: every batch would become a keepalive request and the 64KB pressure comes back.
+- Batching already flushes with keepalive when the page unloads, so it normally does not lose an event fired before a navigation. That flush shares the same 64KB cap, so a large batch `size` or large payloads can still drop part of it. Do not add `keepalive: true` to batching: every batch would become a keepalive request and the 64KB pressure comes back for the whole session.
 - The strategy is read when analytics loads; changing it afterwards does not reload analytics.
 
 ---
