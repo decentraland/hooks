@@ -214,6 +214,9 @@ describe("useAnalytics", () => {
         expect(AnalyticsBrowser.load).toHaveBeenCalledTimes(1)
       })
 
+      // This passes whether the provider syncs the strategy ref in an effect or during render. The effect is
+      // deliberate (a render React discards must never reach a load) and cannot be tested reliably: keep the
+      // sync out of the render body when refactoring the provider.
       describe("and a reload happens for another reason", () => {
         beforeEach(async () => {
           rerender(
