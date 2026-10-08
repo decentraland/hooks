@@ -12,6 +12,7 @@ const useAnalytics = (): AnalyticsContextType => {
   // it loads: passing them through keeps a call made during the load from being dropped here.
   return {
     isInitialized: analyticsContext.isInitialized,
+    isAvailable: analyticsContext.isAvailable,
     track: analyticsContext.track,
     identify: analyticsContext.identify,
     page: analyticsContext.page,

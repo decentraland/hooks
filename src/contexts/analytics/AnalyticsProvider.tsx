@@ -132,19 +132,15 @@ const AnalyticsProvider: React.FC<AnalyticsProviderProps> = (
   }, [writeKey, userId, traits, cdnUrl, apiHost])
 
   // Calls are delegated as soon as the instance exists, so one made while it loads is buffered and sent
-  // once it is ready instead of being dropped. Only `isInitialized` waits for the load.
-  const contextValue = useMemo(() => {
-    if (!analyticsRef.current || status === "idle") {
-      return {
-        isInitialized: false,
-        track: () => {},
-        identify: () => {},
-        page: () => {},
-      }
+  // once it is ready instead of being dropped. Only `isInitialized` waits for the load. The methods keep
+  // their identity from `loading` to `ready`, so an effect that depends on them does not fire twice.
+  const isAvailable = status !== "idle"
+  const methods = useMemo(() => {
+    if (!isAvailable) {
+      return { track: () => {}, identify: () => {}, page: () => {} }
     }
 
     return {
-      isInitialized: status === "ready",
       track: (event: string, payload?: TrackPayload) => {
         analyticsRef.current?.track(event, payload)
       },
@@ -155,7 +151,12 @@ const AnalyticsProvider: React.FC<AnalyticsProviderProps> = (
         analyticsRef.current?.page(name, props)
       },
     }
-  }, [status])
+  }, [isAvailable])
+
+  const contextValue = useMemo(
+    () => ({ isInitialized: status === "ready", isAvailable, ...methods }),
+    [status, isAvailable, methods]
+  )
 
   return (
     <AnalyticsContext.Provider value={contextValue}>

@@ -181,6 +181,40 @@ describe("usePageTracking", () => {
     })
   })
 
+  describe("when analytics is available but still loading", () => {
+    beforeEach(async () => {
+      useAnalyticsMock.mockReturnValue({
+        ...mockAnalytics,
+        isInitialized: false,
+        isAvailable: true,
+      })
+      renderPageTrackingWithProperties("Post", { title: "Hello" })
+      await flushEffects()
+    })
+
+    it("should fire page() so the instance buffers it", () => {
+      expect(mockAnalytics.page).toHaveBeenCalledWith("Post", {
+        title: "Hello",
+      })
+    })
+  })
+
+  describe("when analytics is not available", () => {
+    beforeEach(async () => {
+      useAnalyticsMock.mockReturnValue({
+        ...mockAnalytics,
+        isInitialized: false,
+        isAvailable: false,
+      })
+      renderPageTrackingWithProperties("Post", { title: "Hello" })
+      await flushEffects()
+    })
+
+    it("should not fire page()", () => {
+      expect(mockAnalytics.page).not.toHaveBeenCalled()
+    })
+  })
+
   describe("when analytics is not initialized", () => {
     beforeEach(async () => {
       useAnalyticsMock.mockReturnValue({

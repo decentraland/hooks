@@ -3,6 +3,7 @@ import { act, cleanup, render, renderHook } from "@testing-library/react/pure"
 import { AnalyticsProvider } from "../../src/contexts/analytics/AnalyticsProvider"
 import { getAnalytics } from "../../src/contexts/analytics/registry"
 import { useAnalytics } from "../../src/hooks/useAnalytics"
+import { usePageTracking } from "../../src/hooks/usePageTracking"
 import type { AnalyticsContextType } from "../../src/contexts/analytics/types"
 
 // Mock Segment Analytics
@@ -141,16 +142,34 @@ describe("useAnalytics", () => {
           }
         })
       }
-      const rendered = renderHook(() => useAnalytics(), {
-        wrapper: ({ children }) =>
-          AnalyticsProvider({ writeKey: mockWriteKey, children }),
-      })
+      const rendered = renderHook(
+        () => {
+          usePageTracking("/landing")
+          return useAnalytics()
+        },
+        {
+          wrapper: ({ children }) =>
+            AnalyticsProvider({ writeKey: mockWriteKey, children }),
+        }
+      )
       result = rendered.result
       await act(async () => {})
     })
 
     it("should return non-initialized state", () => {
       expect(result.current.isInitialized).toBe(false)
+    })
+
+    it("should report calls as available, buffered until it is ready", () => {
+      expect(result.current.isAvailable).toBe(true)
+    })
+
+    it("should already hand the page view to the instance to buffer", () => {
+      expect(mockAnalyticsMethods.page).toHaveBeenCalledTimes(1)
+      expect(mockAnalyticsMethods.page).toHaveBeenCalledWith(
+        "/landing",
+        undefined
+      )
     })
 
     it("should already expose the buffering instance to code outside react", () => {
@@ -176,6 +195,10 @@ describe("useAnalytics", () => {
 
       it("should return initialized state", () => {
         expect(result.current.isInitialized).toBe(true)
+      })
+
+      it("should not send the page view again", () => {
+        expect(mockAnalyticsMethods.page).toHaveBeenCalledTimes(1)
       })
     })
 

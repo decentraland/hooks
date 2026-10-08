@@ -12,15 +12,17 @@ type PageTrackingProperties = Record<string, unknown>
  *    Backwards-compatible with the original signature.
  *
  * 2. `usePageTracking(name, properties)` — fires `page(name, properties)` only
- *    after analytics is initialized AND `name` is a non-empty string. Use this
+ *    once analytics is available AND `name` is a non-empty string. Use this
  *    shape when the page title is resolved asynchronously (e.g. from a CMS via
  *    Helmet + RTK Query) so the event lands AFTER `document.title` updates,
  *    avoiding the SPA race that lets Segment auto-capture the previous route's
  *    title via `properties.title`.
  *
- * The hook is initialization-aware in both shapes: when `useAnalytics().page`
- * is the no-op fallback (Segment not loaded yet), the call is skipped to avoid
- * wasted work.
+ * Both shapes wait for analytics to be AVAILABLE, not fully initialized: once
+ * the instance exists a page view is buffered while Segment loads and sent when
+ * it is ready, so a route the visitor leaves in-app before then still counts.
+ * Before that (`page` is the no-op fallback) the call is skipped and fires when
+ * analytics becomes available.
  */
 function usePageTracking(path: string): void
 function usePageTracking(
@@ -31,15 +33,17 @@ function usePageTracking(
   name: string | undefined,
   properties?: PageTrackingProperties
 ) {
-  const { isInitialized, page } = useAnalytics()
+  const { isAvailable: available, isInitialized, page } = useAnalytics()
+  // Context values built without `isAvailable` (older providers, test doubles) fall back to readiness.
+  const isAvailable = available ?? isInitialized
   const propertiesKey = properties ? JSON.stringify(properties) : ""
   const propertiesRef = useRef(properties)
   propertiesRef.current = properties
 
   useEffect(() => {
-    if (!isInitialized || !name) return
+    if (!isAvailable || !name) return
     page(name, propertiesRef.current)
-  }, [isInitialized, name, propertiesKey, page])
+  }, [isAvailable, name, propertiesKey, page])
 }
 
 export { usePageTracking }
