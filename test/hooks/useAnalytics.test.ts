@@ -118,6 +118,77 @@ describe("useAnalytics", () => {
     })
   })
 
+  describe("when analytics.js is still loading its settings and plugins", () => {
+    const { AnalyticsBrowser } = jest.requireMock("@segment/analytics-next")
+    let finishLoading: (outcome: "resolve" | "reject") => Promise<void>
+
+    beforeEach(async () => {
+      let settle: { resolve: () => void; reject: (error: Error) => void }
+      const loading = new Promise<void>((resolve, reject) => {
+        settle = { resolve, reject }
+      })
+      AnalyticsBrowser.load.mockReturnValueOnce({
+        ...mockAnalyticsBrowser,
+        then: (onLoaded: () => void, onFailed: (error: Error) => void) =>
+          loading.then(onLoaded, onFailed),
+      })
+      finishLoading = async (outcome) => {
+        await act(async () => {
+          if (outcome === "resolve") {
+            settle.resolve()
+          } else {
+            settle.reject(new Error("settings failed"))
+          }
+        })
+      }
+      const rendered = renderHook(() => useAnalytics(), {
+        wrapper: ({ children }) =>
+          AnalyticsProvider({ writeKey: mockWriteKey, children }),
+      })
+      result = rendered.result
+      await act(async () => {})
+    })
+
+    it("should return non-initialized state", () => {
+      expect(result.current.isInitialized).toBe(false)
+    })
+
+    it("should already expose the buffering instance to code outside react", () => {
+      expect(getAnalytics()).not.toBeNull()
+    })
+
+    describe("and it finishes loading", () => {
+      beforeEach(async () => {
+        await finishLoading("resolve")
+      })
+
+      it("should return initialized state", () => {
+        expect(result.current.isInitialized).toBe(true)
+      })
+    })
+
+    describe("and it fails to load", () => {
+      let consoleError: jest.SpyInstance
+
+      beforeEach(async () => {
+        consoleError = jest.spyOn(console, "error").mockImplementation(() => {})
+        await finishLoading("reject")
+      })
+
+      afterEach(() => {
+        consoleError.mockRestore()
+      })
+
+      it("should keep returning non-initialized state", () => {
+        expect(result.current.isInitialized).toBe(false)
+      })
+
+      it("should stop exposing the instance to code outside react", () => {
+        expect(getAnalytics()).toBeNull()
+      })
+    })
+  })
+
   describe("when no first party proxy is configured", () => {
     const { AnalyticsBrowser } = jest.requireMock("@segment/analytics-next")
 

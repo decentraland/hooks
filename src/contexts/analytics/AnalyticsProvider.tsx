@@ -89,14 +89,27 @@ const AnalyticsProvider: React.FC<AnalyticsProviderProps> = (
             analytics.identify(userId, traits)
           }
 
-          // Published last: everything above is synchronous, so a throw leaves neither the ref nor
-          // the registry holding an instance this run never finished setting up.
+          // Published once everything above, which is synchronous, succeeded: a throw leaves neither
+          // the ref nor the registry holding an instance this run never finished setting up.
           analyticsRef.current = analytics
           registerAnalyticsInstance(analytics)
-          setIsInitialized(true)
+
+          // The instance buffers calls straight away but only sends them once analytics.js has fetched
+          // its settings and registered its plugins. Reporting ready before that tells a caller that an
+          // event fired right before a navigation will go out, while it can still be sitting in the
+          // buffer when the page unloads.
+          await analytics
+
+          if (isCurrent()) {
+            setIsInitialized(true)
+          }
         } catch (error) {
           console.error("[Analytics] Failed to initialize:", error)
           if (isCurrent()) {
+            const instance = analyticsRef.current
+            if (instance) {
+              unregisterAnalyticsInstance(instance)
+            }
             analyticsRef.current = null
           }
         }
