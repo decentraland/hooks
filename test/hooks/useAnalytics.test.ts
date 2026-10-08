@@ -342,6 +342,90 @@ describe("useAnalytics", () => {
     })
   })
 
+  describe("when the app sets its own delivery strategy", () => {
+    const { AnalyticsBrowser } = jest.requireMock("@segment/analytics-next")
+
+    beforeEach(async () => {
+      renderHook(() => useAnalytics(), {
+        wrapper: ({ children }) =>
+          AnalyticsProvider({
+            writeKey: mockWriteKey,
+            deliveryStrategy: { strategy: "batching", config: { size: 10 } },
+            children,
+          }),
+      })
+      await act(async () => {})
+    })
+
+    it("should deliver events with that strategy instead of keepalive", () => {
+      const [, options] = AnalyticsBrowser.load.mock.calls[0]
+      expect(options.integrations["Segment.io"].deliveryStrategy).toEqual({
+        strategy: "batching",
+        config: { size: 10 },
+      })
+    })
+
+    describe("and the app re-renders it as a new object", () => {
+      const renderWith = (
+        writeKey: string,
+        deliveryStrategy: { strategy: "batching"; config: { size: number } }
+      ) =>
+        React.createElement(AnalyticsProvider, {
+          writeKey,
+          deliveryStrategy,
+          children: null,
+        })
+
+      let rerender: (ui: React.ReactElement) => void
+
+      beforeEach(async () => {
+        cleanup()
+        AnalyticsBrowser.load.mockClear()
+        ;({ rerender } = render(
+          renderWith(mockWriteKey, {
+            strategy: "batching",
+            config: { size: 10 },
+          })
+        ))
+        await act(async () => {})
+        rerender(
+          renderWith(mockWriteKey, {
+            strategy: "batching",
+            config: { size: 10 },
+          })
+        )
+        await act(async () => {})
+      })
+
+      it("should not load analytics again", () => {
+        expect(AnalyticsBrowser.load).toHaveBeenCalledTimes(1)
+      })
+
+      // This passes whether the provider syncs the strategy ref in an effect or during render. The effect is
+      // deliberate (a render React discards must never reach a load) and cannot be tested reliably: keep the
+      // sync out of the render body when refactoring the provider.
+      describe("and a reload happens for another reason", () => {
+        beforeEach(async () => {
+          rerender(
+            renderWith("other-write-key", {
+              strategy: "batching",
+              config: { size: 20 },
+            })
+          )
+          await act(async () => {})
+        })
+
+        it("should load with the latest strategy", () => {
+          const [, options] = AnalyticsBrowser.load.mock.calls[1]
+          expect(options.integrations["Segment.io"].deliveryStrategy).toEqual({
+            strategy: "batching",
+            config: { size: 20 },
+          })
+        })
+      })
+    })
+  })
+
   describe("when a first party proxy is configured", () => {
     const { AnalyticsBrowser } = jest.requireMock("@segment/analytics-next")
 

@@ -35,8 +35,24 @@ const AnalyticsContext = createContext<AnalyticsContextType | null>(null)
 const AnalyticsProvider: React.FC<AnalyticsProviderProps> = (
   props: AnalyticsProviderProps
 ) => {
-  const { writeKey, userId, traits, cdnUrl, apiHost, children } = props
+  const {
+    writeKey,
+    userId,
+    traits,
+    cdnUrl,
+    apiHost,
+    deliveryStrategy,
+    children,
+  } = props
   const analyticsRef = useRef<AnalyticsBrowser | null>(null)
+  // Kept out of the effect's dependencies: callers tend to pass it as an inline object, which would
+  // reload analytics on every render. It only matters at load time.
+  // Synced in an effect declared before the load effect, which runs first, so a render React discards
+  // never leaks its value into a load.
+  const deliveryStrategyRef = useRef(deliveryStrategy)
+  useEffect(() => {
+    deliveryStrategyRef.current = deliveryStrategy
+  })
   // Identifies the run that owns the instance. Advanced synchronously on every run AND on every
   // cleanup, so a load still awaiting its import when the provider is reconfigured or unmounted sees a
   // stale generation and abandons instead of taking over.
@@ -72,15 +88,16 @@ const AnalyticsProvider: React.FC<AnalyticsProviderProps> = (
             settings.cdnURL = resolvedCdnUrl
           }
 
-          // keepalive lets an event fired right before a navigation (a link click that loads the next
-          // page in the same tab) finish sending after the page unloads, instead of being cancelled
-          // with it. analytics-next leaves it off by default.
+          // keepalive, the default here, lets an event fired right before a navigation (a link click that
+          // loads the next page in the same tab) finish sending after the page unloads, instead of being
+          // cancelled with it. analytics-next leaves it off by default.
           const resolvedApiHost = resolveApiHost(apiHost)
           const options: InitOptions = {
             integrations: {
               [SEGMENT_IO]: {
                 ...(resolvedApiHost ? { apiHost: resolvedApiHost } : {}),
-                deliveryStrategy: KEEPALIVE_DELIVERY,
+                deliveryStrategy:
+                  deliveryStrategyRef.current ?? KEEPALIVE_DELIVERY,
               },
             },
           }
