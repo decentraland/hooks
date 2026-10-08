@@ -48,7 +48,7 @@ function App() {
 - Applications sharing identity must also upgrade older SDKs. If an application creates an anonymous ID before SDK initialization, persist it in the `ajs_anonymous_id` cookie (raw string) and the origin-local `ajs_anonymous_id` localStorage entry (JSON string). Use the SDK's writable parent-domain probe, which yields `.decentraland.org` on production subdomains; do not hardcode it for localhost or previews on public suffixes.
 - Never pass an ID read from a URL (for example sites' `anon_user_id`) to `setAnonymousId`; keep it as an event property. URL attribution belongs to the application, not hooks.
 - Segment is an internal dependency pinned exactly under the dependency policy. Review and bump this pin actively for security and compatibility updates, then publish a new hooks version; consumers do not receive SDK updates until they upgrade hooks.
-- Skips initialization when the user agent is a bot (detected via `isbot`).
+- Skips initialization when the user agent is a bot (`isBotClient`, below).
 - If `userId` is provided, calls `identify()` after initialization.
 - Returns no-op functions until Segment finishes loading.
 
@@ -73,6 +73,11 @@ function App() {
 Both are optional and independent, so configure only the one your proxy actually serves. `cdnUrl` is an origin (the SDK appends `/v1/projects/<writeKey>/settings` to it), while `apiHost` is a host plus base path without a protocol (the SDK prepends `https://` and appends the method path). A `https://` prefix on `apiHost` is accepted and stripped.
 
 Both decide where a third party script is loaded from and where every event is delivered, so they are meant to be trusted values coming from the build configuration of the app, never from user input. A value that is not a valid url, or that is not served over https unless it belongs to the app's own origin, is ignored with a warning and analytics falls back to Segment's own endpoints.
+
+### Outside React
+
+- `getAnalytics()` returns the instance the mounted provider loaded, or `null` when there is none, for code that cannot reach the context.
+- `isBotClient(userAgent?)` is the check the provider uses to skip bots. Code that sends events without the provider (a beacon fired before analytics loads) should apply it too. Without an argument it reads `navigator.userAgent`, and returns `false` where there is no `navigator`.
 
 ---
 

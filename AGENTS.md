@@ -246,7 +246,7 @@ Context provider for Segment analytics. Wrap your app with this to enable `useAn
 </AnalyticsProvider>
 ```
 
-**Gotchas**: `cdnUrl` and `apiHost` serve Segment from a first party proxy, since ad blockers drop `cdn.segment.com` and `api.segment.io`. They are independent, so configure only the one the proxy serves. Values that are not valid https urls (or the app's own origin) are ignored with a warning and fall back to Segment's own endpoints.
+**Gotchas**: `cdnUrl` and `apiHost` serve Segment from a first party proxy, since ad blockers drop `cdn.segment.com` and `api.segment.io`. They are independent, so configure only the one the proxy serves. Values that are not valid https urls (or the app's own origin) are ignored with a warning and fall back to Segment's own endpoints. Code outside React reads the loaded instance with `getAnalytics()` and applies the same bot rule with `isBotClient(userAgent?)`.
 
 ---
 

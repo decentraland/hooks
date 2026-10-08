@@ -75,7 +75,11 @@ function resolveApiHost(apiHost?: string): string | undefined {
  * code that sends events without the provider (a beacon fired before analytics loads) applies the same rule instead
  * of depending on `isbot` itself.
  */
-function isBotClient(userAgent: string = navigator.userAgent): boolean {
+function isBotClient(
+  userAgent: string = typeof navigator === "undefined"
+    ? ""
+    : navigator.userAgent
+): boolean {
   return isbot(userAgent)
 }
 
