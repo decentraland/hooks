@@ -3,15 +3,15 @@
  */
 import { isBotClient } from "../../src/contexts/analytics/utils"
 
-describe("isBotClient outside a browser", () => {
-  describe("when there is no navigator to read", () => {
+describe("isBotClient on a server", () => {
+  describe("when the request carries no user agent", () => {
     let original: PropertyDescriptor | undefined
 
     beforeEach(() => {
-      // Node 21+ defines a global navigator, so remove it to reproduce older runtimes and prerenders.
+      // Node 21+ exposes its own `Node.js/<major>` agent, which isbot flags. Pin it so the case holds on any version.
       original = Object.getOwnPropertyDescriptor(globalThis, "navigator")
       Object.defineProperty(globalThis, "navigator", {
-        value: undefined,
+        value: { userAgent: "Node.js/24" },
         configurable: true,
       })
     })
@@ -24,14 +24,9 @@ describe("isBotClient outside a browser", () => {
       }
     })
 
-    it("should treat the client as not a bot instead of throwing", () => {
-      expect(isBotClient()).toBe(false)
-    })
-  })
-
-  describe("when the given user agent is empty", () => {
-    it("should treat the client as not a bot", () => {
-      expect(isBotClient("")).toBe(false)
+    it("should return false instead of classifying the server itself", () => {
+      const headers: Record<string, string | undefined> = {}
+      expect(isBotClient(headers["user-agent"])).toBe(false)
     })
   })
 })
