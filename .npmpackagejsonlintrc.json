@@ -1,0 +1,36 @@
+{
+  "extends": "./package-lint.config.js",
+  "rules": {
+    "no-file-dependencies": "error",
+    "no-git-dependencies": "error",
+    "no-duplicate-properties": "error",
+    "prefer-property-order": [
+      "error",
+      [
+        "name",
+        "version",
+        "description",
+        "main",
+        "module",
+        "types",
+        "type",
+        "exports",
+        "files",
+        "scripts",
+        "dependencies",
+        "peerDependencies",
+        "peerDependenciesMeta",
+        "devDependencies",
+        "repository",
+        "keywords",
+        "author",
+        "license",
+        "bugs",
+        "homepage",
+        "engines",
+        "overrides",
+        "publishConfig"
+      ]
+    ]
+  }
+}
