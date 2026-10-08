@@ -74,6 +74,10 @@ function resolveApiHost(apiHost?: string): string | undefined {
  * Whether the current client is a crawler or another bot, which the provider never loads analytics for. Exported so
  * code that sends events without the provider (a beacon fired before analytics loads) applies the same rule instead
  * of depending on `isbot` itself.
+ *
+ * Without an argument it reads THIS runtime's user agent, so call it that way only in a browser. Server code must pass
+ * the request's user agent, with `?? ""` for a missing header: on Node 21+ the fallback reads the server's own
+ * `Node.js/<major>` agent, which `isbot` classifies as a bot.
  */
 function isBotClient(userAgent?: string): boolean {
   const resolved =

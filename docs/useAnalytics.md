@@ -77,7 +77,7 @@ Both decide where a third party script is loaded from and where every event is d
 ### Outside React
 
 - `getAnalytics()` returns the instance the mounted provider loaded, or `null` when there is none, for code that cannot reach the context.
-- `isBotClient(userAgent?)` is the check the provider uses to skip bots. Code that sends events without the provider (a beacon fired before analytics loads) should apply it too. Without an argument it reads `navigator.userAgent`, and returns `false` where there is no `navigator`.
+- `isBotClient(userAgent?)` is the check the provider uses to skip bots. Code that sends events without the provider (a beacon fired before analytics loads) should apply it too. Without an argument it reads this runtime's `navigator.userAgent`, and returns `false` where there is no `navigator`. Call it that way only in a browser: server code should always pass the request's user agent (`isBotClient(req.headers["user-agent"] ?? "")`), because on Node 21+ the fallback reads the server's own `Node.js/<n>` agent, which is classified as a bot.
 
 ---
 
