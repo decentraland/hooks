@@ -127,15 +127,15 @@ analytics.identify("user-123", {
 
 ```typescript
 function MyPage() {
-  const analytics = useAnalytics()
+  const { page } = useAnalytics()
 
   useEffect(() => {
     // No guard needed: a call made while Segment loads is buffered and sent once it is ready.
-    analytics.page("My Page", {
+    page("My Page", {
       category: "Content",
       section: "Main",
     })
-  }, [analytics.page])
+  }, [page])
 
   return <div>Page Content</div>
 }
