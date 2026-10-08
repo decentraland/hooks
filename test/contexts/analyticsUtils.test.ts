@@ -126,10 +126,11 @@ describe("analytics utils", () => {
       })
     })
 
-    describe("when no user agent is given", () => {
+    describe("when the user agent is missing", () => {
       let userAgentSpy: jest.SpyInstance
 
       beforeEach(() => {
+        // A bot user agent on the runtime, so a fallback to it would show up as `true`.
         userAgentSpy = jest
           .spyOn(navigator, "userAgent", "get")
           .mockReturnValue("curl/8.4.0")
@@ -139,9 +140,16 @@ describe("analytics utils", () => {
         userAgentSpy.mockRestore()
       })
 
-      it("should check the current browser's", () => {
-        expect(isBotClient()).toBe(true)
-      })
+      it.each([
+        ["undefined", undefined],
+        ["null", null],
+        ["an empty string", ""],
+      ])(
+        "should return false for %s without reading the runtime's",
+        (_, userAgent) => {
+          expect(isBotClient(userAgent)).toBe(false)
+        }
+      )
     })
   })
 })

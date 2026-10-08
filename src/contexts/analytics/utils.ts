@@ -75,16 +75,13 @@ function resolveApiHost(apiHost?: string): string | undefined {
  * code that sends events without the provider (a beacon fired before analytics loads) applies the same rule instead
  * of depending on `isbot` itself.
  *
- * Without an argument it reads THIS runtime's user agent, so call it that way only in a browser. Server code must pass
- * the request's user agent, with `?? ""` for a missing header: on Node 21+ the fallback reads the server's own
- * `Node.js/<major>` agent, which `isbot` classifies as a bot.
+ * The user agent is required and never read from the runtime: in a browser pass `navigator.userAgent`, on a server
+ * the request's header. A server fallback would read Node's own `Node.js/<major>` agent (Node 21+), which `isbot`
+ * flags. A missing user agent (`null`, `undefined` or empty) is not treated as a bot, stated here rather than left to
+ * whatever `isbot` returns for an empty string, which a minor release could change.
  */
-function isBotClient(userAgent?: string): boolean {
-  const resolved =
-    userAgent ??
-    (typeof navigator === "undefined" ? undefined : navigator.userAgent)
-  // Stated here rather than left to whatever `isbot` returns for an empty string, which a minor release could change.
-  return resolved ? isbot(resolved) : false
+function isBotClient(userAgent: string | null | undefined): boolean {
+  return userAgent ? isbot(userAgent) : false
 }
 
 export { isBotClient, resolveApiHost, resolveCdnUrl }

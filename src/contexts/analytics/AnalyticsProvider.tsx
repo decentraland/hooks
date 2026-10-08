@@ -66,7 +66,7 @@ const AnalyticsProvider: React.FC<AnalyticsProviderProps> = (
 
     if (!writeKey) {
       console.log("[Analytics] No writeKey provided")
-    } else if (isBotClient()) {
+    } else if (isBotClient(navigator.userAgent)) {
       console.log("[Analytics] Skipping load: bot detected")
     } else {
       void (async () => {
