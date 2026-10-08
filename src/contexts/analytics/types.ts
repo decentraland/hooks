@@ -1,4 +1,14 @@
-import type { EventProperties } from "@segment/analytics-next"
+import type { EventProperties, InitOptions } from "@segment/analytics-next"
+
+type SegmentIoOptions = Exclude<
+  NonNullable<NonNullable<InitOptions["integrations"]>["Segment.io"]>,
+  boolean
+>
+
+/** How analytics-next's Segment.io integration sends events: standard (one request per event) or batching. */
+type AnalyticsDeliveryStrategy = NonNullable<
+  SegmentIoOptions["deliveryStrategy"]
+>
 
 type AnalyticsProviderProps = {
   writeKey: string
@@ -19,6 +29,14 @@ type AnalyticsProviderProps = {
    * The provider maps it to the `apiHost` setting of analytics-next's own `Segment.io` integration.
    */
   apiHost?: string
+  /**
+   * How events are delivered. Defaults to standard delivery with `keepalive`, so an event fired right before a
+   * same-tab navigation still goes out. Browsers cap all in-flight keepalive requests of a page at 64KB, so an app
+   * that sends large or very frequent events can pass its own strategy, e.g. `{ strategy: "batching" }`.
+   *
+   * Read when analytics loads: changing it afterwards does not reload analytics.
+   */
+  deliveryStrategy?: AnalyticsDeliveryStrategy
   children: React.ReactNode
 }
 
@@ -32,6 +50,7 @@ type AnalyticsContextType = {
 }
 
 export {
+  type AnalyticsDeliveryStrategy,
   type AnalyticsProviderProps,
   type TrackPayload,
   type AnalyticsContextType,

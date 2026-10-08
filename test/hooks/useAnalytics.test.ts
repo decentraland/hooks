@@ -155,6 +155,30 @@ describe("useAnalytics", () => {
     })
   })
 
+  describe("when the app sets its own delivery strategy", () => {
+    const { AnalyticsBrowser } = jest.requireMock("@segment/analytics-next")
+
+    beforeEach(async () => {
+      renderHook(() => useAnalytics(), {
+        wrapper: ({ children }) =>
+          AnalyticsProvider({
+            writeKey: mockWriteKey,
+            deliveryStrategy: { strategy: "batching", config: { size: 10 } },
+            children,
+          }),
+      })
+      await act(async () => {})
+    })
+
+    it("should deliver events with that strategy instead of keepalive", () => {
+      const [, options] = AnalyticsBrowser.load.mock.calls[0]
+      expect(options.integrations["Segment.io"].deliveryStrategy).toEqual({
+        strategy: "batching",
+        config: { size: 10 },
+      })
+    })
+  })
+
   describe("when a first party proxy is configured", () => {
     const { AnalyticsBrowser } = jest.requireMock("@segment/analytics-next")
 
