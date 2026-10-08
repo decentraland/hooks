@@ -256,7 +256,8 @@ Access analytics tracking functions. Must be inside `AnalyticsProvider`.
 
 ```typescript
 function useAnalytics(): {
-  isInitialized: boolean
+  isInitialized: boolean // Segment loaded its settings and plugins: new calls are dispatched right away
+  isAvailable?: boolean // calls reach Segment, buffered while it loads; false before the import, for bots, with no write key or after a failed load
   track: (event: string, payload?: EventProperties) => void
   identify: (userId: string, traits?: Record<string, unknown>) => void
   page: (name: string, props?: Record<string, unknown>) => void
@@ -270,7 +271,7 @@ const analytics = useAnalytics()
 analytics.track("Button Clicked", { buttonId: "submit" })
 ```
 
-**Gotchas**: Throws if used outside `AnalyticsProvider`. Returns no-op functions when `isInitialized` is false (before Segment loads).
+**Gotchas**: Throws if used outside `AnalyticsProvider`. Methods are no-ops until the SDK import finishes, then buffered while Segment loads its settings. `isInitialized` turns true only once settings and plugins are loaded: gate on it only when an event must be deliverable right now (before a same-tab navigation), not to avoid no-ops. `usePageTracking` fires on `isAvailable`.
 
 ---
 
