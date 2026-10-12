@@ -18,6 +18,10 @@ const CLIENT_HINTS_TIMEOUT_MS = 1500
 let _cachedData: AdvancedNavigatorUAData | undefined
 let _cacheResolved = false
 
+// The first-render guess, parsed once: the user agent does not change, and until
+// the cache resolves every mount would otherwise parse it again during render.
+let _seedData: AdvancedNavigatorUAData | undefined
+
 type NameAndVersion = { name?: string; version?: string }
 
 type UAParts = {
@@ -154,6 +158,8 @@ function readUserAgentDataSync(): AdvancedNavigatorUAData | undefined {
   if (typeof window === "undefined" || typeof navigator === "undefined") {
     return undefined
   }
+  if (_seedData) return _seedData
+
   const ua = new UAParser(navigator.userAgent)
   const data = toUserAgentData(
     ua,
@@ -161,13 +167,18 @@ function readUserAgentDataSync(): AdvancedNavigatorUAData | undefined {
     readBrowserAndEngine(ua.getResult()),
     false
   )
-  return { ...data, cpu: { architecture: DEFAULT_VALUE } }
+  // The user agent's architecture is distrusted on purpose, even when it parses to
+  // one (`amd64` on ARM Linux, Windows on ARM and Apple Silicon Safari): the real
+  // value only comes from the Client Hints, in the async path.
+  _seedData = { ...data, cpu: { architecture: DEFAULT_VALUE } }
+  return _seedData
 }
 
 /** @internal Reset module-level cache — only for testing. */
 function resetUserAgentCache(): void {
   _cachedData = undefined
   _cacheResolved = false
+  _seedData = undefined
 }
 
 /**

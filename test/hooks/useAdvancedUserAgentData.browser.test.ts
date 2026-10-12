@@ -354,6 +354,17 @@ describe("useAdvancedUserAgentData browser detection", () => {
       }
     )
 
+    it("should parse the user agent once and share the guess between mounts", () => {
+      const { renderHook, cleanup, useAdvancedUserAgentData } = loadHook({
+        userAgent: USER_AGENTS.edge,
+        getHighEntropyValues: () => new Promise(() => undefined),
+      })
+      const first = renderHook(() => useAdvancedUserAgentData())
+      const second = renderHook(() => useAdvancedUserAgentData())
+      expect(second.result.current[1]).toBe(first.result.current[1])
+      cleanup()
+    })
+
     it.each([
       ["Android", USER_AGENTS.chromeAndroid],
       ["iOS", USER_AGENTS.iphone],
