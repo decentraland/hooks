@@ -14,6 +14,12 @@ const USER_AGENTS = {
     "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
   firefox:
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0",
+  linuxChrome:
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+  chromeOs:
+    "Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+  iphone:
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1",
   safari:
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15",
 }
@@ -302,6 +308,7 @@ describe("useAdvancedUserAgentData browser detection", () => {
     it("should return the Windows OS before Client Hints settle", () => {
       const { renderHook, cleanup, useAdvancedUserAgentData } = loadHook({
         userAgent: USER_AGENTS.edge,
+        platform: "Windows",
         getHighEntropyValues: () => new Promise(() => undefined),
       })
       const { result } = renderHook(() => useAdvancedUserAgentData())
@@ -320,6 +327,44 @@ describe("useAdvancedUserAgentData browser detection", () => {
       expect(result.current[1]?.cpu.architecture).toBe("Unknown")
       cleanup()
     })
+  })
+
+  describe("when the hook renders for the first time", () => {
+    const firstRender = (userAgent: string) => {
+      const { renderHook, cleanup, useAdvancedUserAgentData } = loadHook({
+        userAgent,
+        getHighEntropyValues: () => new Promise(() => undefined),
+      })
+      const { result } = renderHook(() => useAdvancedUserAgentData())
+      const [isLoading, data] = result.current
+      cleanup()
+      return { isLoading, data }
+    }
+
+    it.each([
+      ["Linux", USER_AGENTS.linuxChrome],
+      ["ChromeOS", USER_AGENTS.chromeOs],
+      ["macOS", USER_AGENTS.safari],
+    ])(
+      "should report an Unknown architecture on %s, whatever the user agent claims",
+      (_name, userAgent) => {
+        const { isLoading, data } = firstRender(userAgent)
+        expect(isLoading).toBe(true)
+        expect(data?.cpu.architecture).toBe("Unknown")
+      }
+    )
+
+    it.each([
+      ["Android", USER_AGENTS.chromeAndroid],
+      ["iOS", USER_AGENTS.iphone],
+    ])(
+      "should report a mobile device on %s while loading",
+      (_name, userAgent) => {
+        const { isLoading, data } = firstRender(userAgent)
+        expect(isLoading).toBe(true)
+        expect(data?.mobile).toBe(true)
+      }
+    )
   })
 
   describe("when Windows on ARM sends an x64 user agent", () => {
