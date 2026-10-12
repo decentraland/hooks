@@ -49,7 +49,6 @@ const AnalyticsProvider: React.FC<AnalyticsProviderProps> = (
     } else {
       void (async () => {
         try {
-          // eslint-disable-next-line @typescript-eslint/naming-convention
           const { AnalyticsBrowser } = await import("@segment/analytics-next")
 
           // A newer configuration won, or the provider unmounted, while this import was in flight.
