@@ -224,7 +224,7 @@ if (!isLoading && uaData) {
 }
 ```
 
-**Gotchas**: `browser` and `engine` come from the user-agent string (name and the reduced version); OS and CPU architecture use Client Hints. Client Hints are optional: if they reject or take longer than 1.5 seconds the hook resolves with the user-agent data instead of staying in `isLoading`. Brave sends a Chrome user agent, so it is reported as `Brave` through its Client Hints brand or `navigator.brave`.
+**Gotchas**: `browser` and `engine` come from the user-agent string (name and the reduced version); OS and CPU architecture use Client Hints. Client Hints are optional: if they reject or take longer than 1.5 seconds the hook resolves with the user-agent data instead of staying in `isLoading`. Brave sends a Chrome user agent, so it is reported as `Brave` through its Client Hints brand or `navigator.brave`. `uaData` is defined from the first render with a user-agent-string guess (OS name included) and refined when `isLoading` turns false; until then a Mac without an ARM user agent reports `Unknown` architecture.
 
 ---
 

@@ -296,6 +296,19 @@ describe("useAdvancedUserAgentData browser detection", () => {
     })
   })
 
+  describe("when the hook renders for the first time on Windows", () => {
+    it("should return the Windows OS before Client Hints settle", () => {
+      const { renderHook, cleanup, useAdvancedUserAgentData } = loadHook({
+        userAgent: USER_AGENTS.edge,
+        getHighEntropyValues: () => new Promise(() => undefined),
+      })
+      const { result } = renderHook(() => useAdvancedUserAgentData())
+      expect(result.current[0]).toBe(true)
+      expect(result.current[1]?.os.name).toBe("Windows")
+      cleanup()
+    })
+  })
+
   describe("when Client Hints never settle", () => {
     let environment: Environment
     let hintsCalls: number
@@ -322,7 +335,28 @@ describe("useAdvancedUserAgentData browser detection", () => {
       })
       expect(hintsCalls).toBeGreaterThan(0)
       expect(result.current[0]).toBe(true)
-      expect(result.current[1]).toBeUndefined()
+      cleanup()
+    })
+
+    it("should already return the user agent guess while loading", async () => {
+      const { renderHook, cleanup, useAdvancedUserAgentData } =
+        loadHook(environment)
+      const { result } = renderHook(() => useAdvancedUserAgentData())
+      expect(result.current[0]).toBe(true)
+      expect(result.current[1]).toMatchObject({
+        browser: { name: "Brave" },
+        os: { name: "macOS", version: "10.15.7" },
+        cpu: { architecture: "Unknown" },
+        mobile: false,
+      })
+      cleanup()
+    })
+
+    it("should not probe the GPU for Apple Silicon before the hints settle", () => {
+      const { renderHook, cleanup, useAdvancedUserAgentData } =
+        loadHook(environment)
+      renderHook(() => useAdvancedUserAgentData())
+      expect(HTMLCanvasElement.prototype.getContext).not.toHaveBeenCalled()
       cleanup()
     })
 

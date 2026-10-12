@@ -36,7 +36,7 @@ Returns `[isLoading, data]` tuple:
 | Field | Type | Description |
 |-------|------|-------------|
 | `isLoading` | `boolean` | True while parsing user agent data |
-| `data` | `AdvancedNavigatorUAData \| undefined` | Parsed user agent data, or undefined while loading |
+| `data` | `AdvancedNavigatorUAData \| undefined` | A user-agent-string guess from the first render, refined with Client Hints once loading ends. `undefined` only without `navigator` (server rendering) |
 
 ## Examples
 
@@ -102,11 +102,11 @@ function useEnrichedAnalytics() {
 
 - Use for device-specific rendering or feature gating.
 - Combine with analytics to enrich tracking events with device info.
-- The data is parsed once on mount and does not change.
+- The data is parsed once on mount and changes at most once, when the Client Hints refine the first guess.
 
 ## Pitfalls
 
 - Uses the User-Agent Client Hints API when available, falling back to `ua-parser-js` for standard user agent parsing. If the Client Hints call rejects or takes longer than 1.5 seconds, the hook resolves with the User-Agent data instead of staying in `isLoading`.
 - `browser` and `engine` come from the user-agent string (name and reduced version). Brave sends a Chrome user agent, so it is reported as `Brave` through its Client Hints brand or `navigator.brave`.
 - The `architecture` field may be empty on some browsers/devices.
-- Returns `undefined` (not `null`) while loading.
+- While loading, `data` holds the user-agent-string guess: OS name and browser are usable for links and icons, but a Mac without an ARM user agent reports `Unknown` architecture until loading ends. Wait for `isLoading === false` before choosing an architecture-specific build.
