@@ -21,6 +21,7 @@ const USER_AGENTS = {
 type Environment = {
   userAgent: string
   brave?: boolean
+  platform?: string
   getHighEntropyValues?: () => Promise<unknown>
 }
 
@@ -56,6 +57,7 @@ function restoreNavigator(): void {
 function loadHook({
   userAgent,
   brave,
+  platform = "macOS",
   getHighEntropyValues,
 }: Environment): HookModule {
   Object.defineProperty(window.navigator, "userAgent", {
@@ -68,7 +70,7 @@ function loadHook({
   })
   Object.defineProperty(window.navigator, "userAgentData", {
     value: getHighEntropyValues
-      ? { brands: [], mobile: false, platform: "macOS", getHighEntropyValues }
+      ? { brands: [], mobile: false, platform, getHighEntropyValues }
       : undefined,
     configurable: true,
   })
@@ -305,6 +307,62 @@ describe("useAdvancedUserAgentData browser detection", () => {
       const { result } = renderHook(() => useAdvancedUserAgentData())
       expect(result.current[0]).toBe(true)
       expect(result.current[1]?.os.name).toBe("Windows")
+      cleanup()
+    })
+
+    it("should report an Unknown architecture instead of the x64 the user agent claims", () => {
+      const { renderHook, cleanup, useAdvancedUserAgentData } = loadHook({
+        userAgent: USER_AGENTS.edge,
+        platform: "Windows",
+        getHighEntropyValues: () => new Promise(() => undefined),
+      })
+      const { result } = renderHook(() => useAdvancedUserAgentData())
+      expect(result.current[1]?.cpu.architecture).toBe("Unknown")
+      cleanup()
+    })
+  })
+
+  describe("when Windows on ARM sends an x64 user agent", () => {
+    const loadWindowsArm = (hints: Record<string, unknown>) =>
+      loadHook({
+        userAgent: USER_AGENTS.edge,
+        platform: "Windows",
+        getHighEntropyValues: () =>
+          Promise.resolve({
+            platform: "Windows",
+            platformVersion: "15.0.0",
+            ...hints,
+          }),
+      })
+
+    it("should read Unknown while loading and arm64 once the hints resolve", async () => {
+      const { renderHook, act, cleanup, useAdvancedUserAgentData } =
+        loadWindowsArm({ architecture: "arm", bitness: "64" })
+      const { result } = renderHook(() => useAdvancedUserAgentData())
+      expect(result.current[0]).toBe(true)
+      expect(result.current[1]?.os.name).toBe("Windows")
+      expect(result.current[1]?.cpu.architecture).toBe("Unknown")
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 50))
+      })
+
+      expect(result.current[0]).toBe(false)
+      expect(result.current[1]?.cpu.architecture).toBe("arm64")
+      cleanup()
+    })
+
+    it("should keep amd64 when the hints resolve x86 on 64 bits", async () => {
+      const { renderHook, act, cleanup, useAdvancedUserAgentData } =
+        loadWindowsArm({ architecture: "x86", bitness: "64" })
+      const { result } = renderHook(() => useAdvancedUserAgentData())
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 50))
+      })
+
+      expect(result.current[0]).toBe(false)
+      expect(result.current[1]?.cpu.architecture).toBe("amd64")
       cleanup()
     })
   })

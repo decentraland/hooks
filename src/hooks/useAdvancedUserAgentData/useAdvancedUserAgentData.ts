@@ -144,17 +144,27 @@ function toUserAgentData(
  * render so a consumer never has to render an "unknown OS" state while the
  * Client Hints round trip is pending. It skips the Apple Silicon probe (it
  * creates a WebGL context, too costly for a render), so a Mac without an ARM
- * user agent reads as `Unknown` architecture until the hook resolves.
+ * user agent reads as `Unknown` architecture until the hook resolves. Windows
+ * does the same: Windows on ARM reports an x64 user agent, so reading `amd64`
+ * from it would be wrong until the Client Hints say otherwise.
+ *
+ * Returns `undefined` on the server. Node 21+ defines a global `navigator`
+ * whose user agent is `Node.js/<version>`, so `window` is checked too.
  */
 function readUserAgentDataSync(): AdvancedNavigatorUAData | undefined {
-  if (typeof navigator === "undefined") return undefined
+  if (typeof window === "undefined" || typeof navigator === "undefined") {
+    return undefined
+  }
   const ua = new UAParser(navigator.userAgent)
-  return toUserAgentData(
+  const data = toUserAgentData(
     ua,
     readFromUserAgent(ua),
     readBrowserAndEngine(ua.getResult()),
     false
   )
+  return data.os.name === "Windows"
+    ? { ...data, cpu: { architecture: DEFAULT_VALUE } }
+    : data
 }
 
 /** @internal Reset module-level cache — only for testing. */

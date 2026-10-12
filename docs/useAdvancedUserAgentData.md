@@ -36,7 +36,7 @@ Returns `[isLoading, data]` tuple:
 | Field | Type | Description |
 |-------|------|-------------|
 | `isLoading` | `boolean` | True while parsing user agent data |
-| `data` | `AdvancedNavigatorUAData \| undefined` | A user-agent-string guess from the first render, refined with Client Hints once loading ends. `undefined` only without `navigator` (server rendering) |
+| `data` | `AdvancedNavigatorUAData \| undefined` | A user-agent-string guess from the first render, refined with Client Hints once loading ends. `undefined` on the server (no `window`), even when Node provides a `navigator` |
 
 ## Examples
 
@@ -109,4 +109,6 @@ function useEnrichedAnalytics() {
 - Uses the User-Agent Client Hints API when available, falling back to `ua-parser-js` for standard user agent parsing. If the Client Hints call rejects or takes longer than 1.5 seconds, the hook resolves with the User-Agent data instead of staying in `isLoading`.
 - `browser` and `engine` come from the user-agent string (name and reduced version). Brave sends a Chrome user agent, so it is reported as `Brave` through its Client Hints brand or `navigator.brave`.
 - The `architecture` field may be empty on some browsers/devices.
-- While loading, `data` holds the user-agent-string guess: OS name and browser are usable for links and icons, but a Mac without an ARM user agent reports `Unknown` architecture until loading ends. Wait for `isLoading === false` before choosing an architecture-specific build.
+- While loading, `data` holds the user-agent-string guess: OS name and browser are usable for links and icons, but a Mac without an ARM user agent and any Windows device report `Unknown` architecture until loading ends (Windows on ARM sends an x64 user agent). Wait for `isLoading === false` before choosing an architecture-specific build.
+- `isLoading === false` does not guarantee a verified architecture: if the Client Hints are missing, rejected or time out, Windows on ARM can still read `amd64`. Known limitation.
+- Server rendering: `data` is `undefined` on the server while the first browser render already has data. Gate rendered data on `isLoading` so the server and the first client render match. This hook does not remove hydration mismatches by itself.
