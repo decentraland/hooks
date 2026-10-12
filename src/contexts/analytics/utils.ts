@@ -14,7 +14,7 @@ function resolveUrl(name: string, value: string): URL | undefined {
 
   try {
     resolved = new URL(value, window.location.href)
-  } catch (_error) {
+  } catch {
     console.warn(
       `[Analytics] Ignoring the ${name} "${value}", it is not a valid url`
     )
