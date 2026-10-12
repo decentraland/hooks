@@ -14,6 +14,12 @@ const USER_AGENTS = {
     "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
   firefox:
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0",
+  linuxChrome:
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+  chromeOs:
+    "Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+  iphone:
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1",
   safari:
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15",
 }
@@ -21,6 +27,7 @@ const USER_AGENTS = {
 type Environment = {
   userAgent: string
   brave?: boolean
+  platform?: string
   getHighEntropyValues?: () => Promise<unknown>
 }
 
@@ -56,6 +63,7 @@ function restoreNavigator(): void {
 function loadHook({
   userAgent,
   brave,
+  platform = "macOS",
   getHighEntropyValues,
 }: Environment): HookModule {
   Object.defineProperty(window.navigator, "userAgent", {
@@ -68,7 +76,7 @@ function loadHook({
   })
   Object.defineProperty(window.navigator, "userAgentData", {
     value: getHighEntropyValues
-      ? { brands: [], mobile: false, platform: "macOS", getHighEntropyValues }
+      ? { brands: [], mobile: false, platform, getHighEntropyValues }
       : undefined,
     configurable: true,
   })
@@ -296,6 +304,131 @@ describe("useAdvancedUserAgentData browser detection", () => {
     })
   })
 
+  describe("when the hook renders for the first time on Windows", () => {
+    it("should return the Windows OS before Client Hints settle", () => {
+      const { renderHook, cleanup, useAdvancedUserAgentData } = loadHook({
+        userAgent: USER_AGENTS.edge,
+        platform: "Windows",
+        getHighEntropyValues: () => new Promise(() => undefined),
+      })
+      const { result } = renderHook(() => useAdvancedUserAgentData())
+      expect(result.current[0]).toBe(true)
+      expect(result.current[1]?.os.name).toBe("Windows")
+      cleanup()
+    })
+
+    it("should report an Unknown architecture instead of the x64 the user agent claims", () => {
+      const { renderHook, cleanup, useAdvancedUserAgentData } = loadHook({
+        userAgent: USER_AGENTS.edge,
+        platform: "Windows",
+        getHighEntropyValues: () => new Promise(() => undefined),
+      })
+      const { result } = renderHook(() => useAdvancedUserAgentData())
+      expect(result.current[1]?.cpu.architecture).toBe("Unknown")
+      cleanup()
+    })
+  })
+
+  describe("when the hook renders for the first time", () => {
+    const firstRender = (userAgent: string) => {
+      const { renderHook, cleanup, useAdvancedUserAgentData } = loadHook({
+        userAgent,
+        getHighEntropyValues: () => new Promise(() => undefined),
+      })
+      const { result } = renderHook(() => useAdvancedUserAgentData())
+      const [isLoading, data] = result.current
+      cleanup()
+      return { isLoading, data }
+    }
+
+    it.each([
+      ["Linux", USER_AGENTS.linuxChrome],
+      ["ChromeOS", USER_AGENTS.chromeOs],
+      ["macOS", USER_AGENTS.safari],
+    ])(
+      "should report an Unknown architecture on %s, whatever the user agent claims",
+      (_name, userAgent) => {
+        const { isLoading, data } = firstRender(userAgent)
+        expect(isLoading).toBe(true)
+        expect(data?.cpu.architecture).toBe("Unknown")
+      }
+    )
+
+    it("should give each mount its own copy of the guess", () => {
+      const { renderHook, cleanup, useAdvancedUserAgentData } = loadHook({
+        userAgent: USER_AGENTS.edge,
+        getHighEntropyValues: () => new Promise(() => undefined),
+      })
+      const first = renderHook(() => useAdvancedUserAgentData())
+      const firstData = first.result.current[1] as AdvancedNavigatorUAData
+      firstData.os.name = "Linux"
+      firstData.cpu.architecture = "amd64"
+
+      const second = renderHook(() => useAdvancedUserAgentData())
+
+      expect(second.result.current[1]?.os.name).toBe("Windows")
+      expect(second.result.current[1]?.cpu.architecture).toBe("Unknown")
+      cleanup()
+    })
+
+    it.each([
+      ["Android", USER_AGENTS.chromeAndroid],
+      ["iOS", USER_AGENTS.iphone],
+    ])(
+      "should report a mobile device on %s while loading",
+      (_name, userAgent) => {
+        const { isLoading, data } = firstRender(userAgent)
+        expect(isLoading).toBe(true)
+        expect(data?.mobile).toBe(true)
+      }
+    )
+  })
+
+  describe("when Windows on ARM sends an x64 user agent", () => {
+    const loadWindowsArm = (hints: Record<string, unknown>) =>
+      loadHook({
+        userAgent: USER_AGENTS.edge,
+        platform: "Windows",
+        getHighEntropyValues: () =>
+          Promise.resolve({
+            platform: "Windows",
+            platformVersion: "15.0.0",
+            ...hints,
+          }),
+      })
+
+    it("should read Unknown while loading and arm64 once the hints resolve", async () => {
+      const { renderHook, act, cleanup, useAdvancedUserAgentData } =
+        loadWindowsArm({ architecture: "arm", bitness: "64" })
+      const { result } = renderHook(() => useAdvancedUserAgentData())
+      expect(result.current[0]).toBe(true)
+      expect(result.current[1]?.os.name).toBe("Windows")
+      expect(result.current[1]?.cpu.architecture).toBe("Unknown")
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 50))
+      })
+
+      expect(result.current[0]).toBe(false)
+      expect(result.current[1]?.cpu.architecture).toBe("arm64")
+      cleanup()
+    })
+
+    it("should keep amd64 when the hints resolve x86 on 64 bits", async () => {
+      const { renderHook, act, cleanup, useAdvancedUserAgentData } =
+        loadWindowsArm({ architecture: "x86", bitness: "64" })
+      const { result } = renderHook(() => useAdvancedUserAgentData())
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 50))
+      })
+
+      expect(result.current[0]).toBe(false)
+      expect(result.current[1]?.cpu.architecture).toBe("amd64")
+      cleanup()
+    })
+  })
+
   describe("when Client Hints never settle", () => {
     let environment: Environment
     let hintsCalls: number
@@ -322,7 +455,28 @@ describe("useAdvancedUserAgentData browser detection", () => {
       })
       expect(hintsCalls).toBeGreaterThan(0)
       expect(result.current[0]).toBe(true)
-      expect(result.current[1]).toBeUndefined()
+      cleanup()
+    })
+
+    it("should already return the user agent guess while loading", async () => {
+      const { renderHook, cleanup, useAdvancedUserAgentData } =
+        loadHook(environment)
+      const { result } = renderHook(() => useAdvancedUserAgentData())
+      expect(result.current[0]).toBe(true)
+      expect(result.current[1]).toMatchObject({
+        browser: { name: "Brave" },
+        os: { name: "macOS", version: "10.15.7" },
+        cpu: { architecture: "Unknown" },
+        mobile: false,
+      })
+      cleanup()
+    })
+
+    it("should not probe the GPU for Apple Silicon before the hints settle", () => {
+      const { renderHook, cleanup, useAdvancedUserAgentData } =
+        loadHook(environment)
+      renderHook(() => useAdvancedUserAgentData())
+      expect(HTMLCanvasElement.prototype.getContext).not.toHaveBeenCalled()
       cleanup()
     })
 

@@ -18,6 +18,10 @@ const CLIENT_HINTS_TIMEOUT_MS = 1500
 let _cachedData: AdvancedNavigatorUAData | undefined
 let _cacheResolved = false
 
+// The first-render guess, parsed once (each mount gets a copy, see `copyUserAgentData`): the user agent does not change, and until
+// the cache resolves every mount would otherwise parse it again during render.
+let _seedData: AdvancedNavigatorUAData | undefined
+
 type NameAndVersion = { name?: string; version?: string }
 
 type UAParts = {
@@ -75,15 +79,129 @@ function readFromUserAgent(ua: UAParser): UAParts {
   }
 }
 
+type BrowserAndEngine = Pick<AdvancedNavigatorUAData, "browser" | "engine">
+
+// Browser and engine come from the user-agent string. They are copied out because
+// `uaResult.withClientHints()` updates `uaResult` in place (and keeps doing so if
+// the hints settle after the timeout).
+function readBrowserAndEngine(uaResult: UAParts["uaResult"]): BrowserAndEngine {
+  return {
+    browser: {
+      name: uaResult.browser.name ?? DEFAULT_VALUE,
+      version: uaResult.browser.version ?? DEFAULT_VALUE,
+    },
+    engine: {
+      name: uaResult.engine.name ?? DEFAULT_VALUE,
+      version: uaResult.engine.version ?? DEFAULT_VALUE,
+    },
+  }
+}
+
+function toUserAgentData(
+  ua: UAParser,
+  parts: UAParts,
+  { browser, engine }: BrowserAndEngine,
+  detectAppleSilicon: boolean
+): AdvancedNavigatorUAData {
+  // Brave sends a Chrome-form user agent. It is told apart by its Client Hints
+  // brand or, when the hints are missing, late or rejected, by `navigator.brave`
+  // (synchronous in ua-parser-js 2.x although typed as possibly async).
+  const featureChecked = ua.getBrowser().withFeatureCheck() as ReturnType<
+    UAParser["getBrowser"]
+  >
+  const browserName =
+    parts.hintsBrowserName === "Brave" || featureChecked.name === "Brave"
+      ? "Brave"
+      : browser.name
+
+  const os = {
+    name: parts.os.name ?? DEFAULT_VALUE,
+    version: parts.os.version ?? DEFAULT_VALUE,
+  }
+
+  let architecture: string
+  if (parts.architecture) {
+    architecture = parts.architecture
+  } else {
+    architecture =
+      detectAppleSilicon &&
+      os.name === "macOS" &&
+      isAppleSilicon(parts.uaResult)
+        ? "arm64"
+        : "Unknown"
+  }
+
+  return {
+    browser: { ...browser, name: browserName },
+    engine,
+    os,
+    cpu: {
+      architecture,
+    },
+    mobile: ua.getDevice().is("mobile"),
+    tablet: ua.getDevice().is("tablet"),
+  }
+}
+
+// Consumers may write into the object they get (ui2 sets the OS and architecture
+// from a `?os=` param), so every mount receives its own copy of the parsed guess.
+function copyUserAgentData(
+  data: AdvancedNavigatorUAData
+): AdvancedNavigatorUAData {
+  return {
+    browser: { ...data.browser },
+    engine: { ...data.engine },
+    os: { ...data.os },
+    cpu: { ...data.cpu },
+    mobile: data.mobile,
+    tablet: data.tablet,
+  }
+}
+
+/**
+ * First guess from the user-agent string alone, available on the very first
+ * render so a consumer never has to render an "unknown OS" state while the
+ * Client Hints round trip is pending. The architecture is always `Unknown`:
+ * the reduced user agent reports Intel/x64 on Apple Silicon Safari, Windows on
+ * ARM, ARM Linux and ARM ChromeOS alike, and the Apple Silicon probe is skipped
+ * because it creates a WebGL context, too costly for a render.
+ *
+ * Returns `undefined` on the server. Node 21+ defines a global `navigator`
+ * whose user agent is `Node.js/<version>`, so `window` is checked too.
+ */
+function readUserAgentDataSync(): AdvancedNavigatorUAData | undefined {
+  if (typeof window === "undefined" || typeof navigator === "undefined") {
+    return undefined
+  }
+  if (_seedData) return copyUserAgentData(_seedData)
+
+  const ua = new UAParser(navigator.userAgent)
+  const data = toUserAgentData(
+    ua,
+    readFromUserAgent(ua),
+    readBrowserAndEngine(ua.getResult()),
+    false
+  )
+  // The user agent's architecture is distrusted on purpose, even when it parses to
+  // one (`amd64` on ARM Linux, Windows on ARM and Apple Silicon Safari): the real
+  // value only comes from the Client Hints, in the async path.
+  _seedData = { ...data, cpu: { architecture: DEFAULT_VALUE } }
+  return copyUserAgentData(_seedData)
+}
+
 /** @internal Reset module-level cache — only for testing. */
 function resetUserAgentCache(): void {
   _cachedData = undefined
   _cacheResolved = false
+  _seedData = undefined
 }
 
 /**
  * extract or infer the [UserAgentData](https://developer.mozilla.org/en-US/docs/Web/API/Navigator/userAgentData)
  * that is an object which can be used to access the User-Agent Client Hints API.
+ *
+ * `data` is a user-agent-string guess from the first render and is refined with
+ * Client Hints once `isLoading` turns false.
  */
 function useAdvancedUserAgentData(): [
   boolean,
@@ -91,7 +209,7 @@ function useAdvancedUserAgentData(): [
 ] {
   const [isLoading, setLoading] = useState(!_cacheResolved)
   const [data, setData] = useState<AdvancedNavigatorUAData | undefined>(
-    _cachedData
+    () => _cachedData ?? readUserAgentDataSync()
   )
 
   useAsyncEffect(async () => {
@@ -104,18 +222,7 @@ function useAdvancedUserAgentData(): [
     setLoading(true)
     const ua = new UAParser(navigator.userAgent)
     const uaResult = ua.getResult()
-
-    // Browser and engine come from the user-agent string. They are copied before
-    // the Client Hints call because `uaResult.withClientHints()` updates `uaResult`
-    // in place (and keeps doing so if the hints settle after the timeout).
-    const engine = {
-      name: uaResult.engine.name ?? DEFAULT_VALUE,
-      version: uaResult.engine.version ?? DEFAULT_VALUE,
-    }
-    const browser = {
-      name: uaResult.browser.name ?? DEFAULT_VALUE,
-      version: uaResult.browser.version ?? DEFAULT_VALUE,
-    }
+    const browserAndEngine = readBrowserAndEngine(uaResult)
 
     // OS and CPU also use Client Hints, which are optional: if they reject or take
     // too long, the user-agent string alone is used.
@@ -125,41 +232,7 @@ function useAdvancedUserAgentData(): [
         CLIENT_HINTS_TIMEOUT_MS
       )) ?? readFromUserAgent(ua)
 
-    // Brave sends a Chrome-form user agent. It is told apart by its Client Hints
-    // brand or, when the hints are missing, late or rejected, by `navigator.brave`
-    // (synchronous in ua-parser-js 2.x although typed as possibly async).
-    const featureChecked = ua.getBrowser().withFeatureCheck() as ReturnType<
-      UAParser["getBrowser"]
-    >
-    if (parts.hintsBrowserName === "Brave" || featureChecked.name === "Brave") {
-      browser.name = "Brave"
-    }
-
-    const os = {
-      name: parts.os.name ?? DEFAULT_VALUE,
-      version: parts.os.version ?? DEFAULT_VALUE,
-    }
-
-    let architecture: string
-    if (!parts.architecture) {
-      architecture =
-        os.name === "macOS" && isAppleSilicon(parts.uaResult)
-          ? "arm64"
-          : "Unknown"
-    } else {
-      architecture = parts.architecture
-    }
-
-    const result: AdvancedNavigatorUAData = {
-      browser,
-      engine,
-      os,
-      cpu: {
-        architecture,
-      },
-      mobile: ua.getDevice().is("mobile"),
-      tablet: ua.getDevice().is("tablet"),
-    }
+    const result = toUserAgentData(ua, parts, browserAndEngine, true)
 
     _cachedData = result
     _cacheResolved = true

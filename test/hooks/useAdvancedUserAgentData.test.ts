@@ -61,7 +61,11 @@ describe("useAdvancedUserAgentData", () => {
     const { result } = renderHook(() => useAdvancedUserAgentData())
 
     expect(result.current[0]).toBe(true)
-    expect(result.current[1]).toBeUndefined()
+    // The first render already carries the user-agent-string guess.
+    expect(result.current[1]?.browser).toEqual({
+      name: "Chrome",
+      version: "100.0",
+    })
 
     await new Promise((resolve) => setTimeout(resolve, 100))
 
