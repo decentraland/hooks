@@ -102,7 +102,8 @@ function useEnrichedAnalytics() {
 
 - Use for device-specific rendering or feature gating.
 - Combine with analytics to enrich tracking events with device info.
-- The data is parsed once on mount and changes at most once, when the Client Hints refine the first guess.
+- The user agent is parsed once per page. `data` starts as that guess and is refined when the Client Hints resolve. Every instance that mounts before the cache resolves makes its own Client Hints call, so a given instance can see its data change once per such call, not strictly once.
+- Each mount receives its own copy of the guess, so writing into `data` does not leak into other instances.
 
 ## Pitfalls
 
@@ -111,4 +112,4 @@ function useEnrichedAnalytics() {
 - The `architecture` field may be empty on some browsers/devices.
 - While loading, `data` holds the user-agent-string guess: OS name and browser are usable for links and icons, but the architecture is always `Unknown` until loading ends, because the reduced user agent reports Intel/x64 on Apple Silicon, Windows on ARM, ARM Linux and ARM ChromeOS. Wait for `isLoading === false` before choosing an architecture-specific build.
 - `isLoading === false` does not guarantee a verified architecture: if the Client Hints are missing, rejected or time out, Windows on ARM can still read `amd64`. Known limitation.
-- Server rendering: `data` is `undefined` on the server while the first browser render already has data. Gate rendered data on `isLoading` so the server and the first client render match, unless another instance of the hook has already resolved earlier in the page: a second root or a lazy Suspense boundary that hydrates later starts with `isLoading === false` and the resolved data. This hook does not remove hydration mismatches by itself.
+- Server rendering: `data` is `undefined` on the server while the first browser render already has data. Gate rendered data on `isLoading` so the server and the first client render match, unless another instance of the hook has already resolved earlier in the page: a second root or a lazy Suspense boundary that hydrates later starts with `isLoading === false` and the resolved data. Behavior change: before the first-render guess, `data` was `undefined` on the first hydration render too, matching the server. A consumer that renders from `data` without checking `isLoading` can now hydrate with markup that differs from the server's. This hook does not remove hydration mismatches by itself.

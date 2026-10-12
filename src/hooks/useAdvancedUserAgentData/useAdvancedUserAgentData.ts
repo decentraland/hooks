@@ -18,7 +18,7 @@ const CLIENT_HINTS_TIMEOUT_MS = 1500
 let _cachedData: AdvancedNavigatorUAData | undefined
 let _cacheResolved = false
 
-// The first-render guess, parsed once: the user agent does not change, and until
+// The first-render guess, parsed once (each mount gets a copy, see `copyUserAgentData`): the user agent does not change, and until
 // the cache resolves every mount would otherwise parse it again during render.
 let _seedData: AdvancedNavigatorUAData | undefined
 
@@ -143,6 +143,21 @@ function toUserAgentData(
   }
 }
 
+// Consumers may write into the object they get (ui2 sets the OS and architecture
+// from a `?os=` param), so every mount receives its own copy of the parsed guess.
+function copyUserAgentData(
+  data: AdvancedNavigatorUAData
+): AdvancedNavigatorUAData {
+  return {
+    browser: { ...data.browser },
+    engine: { ...data.engine },
+    os: { ...data.os },
+    cpu: { ...data.cpu },
+    mobile: data.mobile,
+    tablet: data.tablet,
+  }
+}
+
 /**
  * First guess from the user-agent string alone, available on the very first
  * render so a consumer never has to render an "unknown OS" state while the
@@ -158,7 +173,7 @@ function readUserAgentDataSync(): AdvancedNavigatorUAData | undefined {
   if (typeof window === "undefined" || typeof navigator === "undefined") {
     return undefined
   }
-  if (_seedData) return _seedData
+  if (_seedData) return copyUserAgentData(_seedData)
 
   const ua = new UAParser(navigator.userAgent)
   const data = toUserAgentData(
@@ -171,7 +186,7 @@ function readUserAgentDataSync(): AdvancedNavigatorUAData | undefined {
   // one (`amd64` on ARM Linux, Windows on ARM and Apple Silicon Safari): the real
   // value only comes from the Client Hints, in the async path.
   _seedData = { ...data, cpu: { architecture: DEFAULT_VALUE } }
-  return _seedData
+  return copyUserAgentData(_seedData)
 }
 
 /** @internal Reset module-level cache — only for testing. */

@@ -354,14 +354,20 @@ describe("useAdvancedUserAgentData browser detection", () => {
       }
     )
 
-    it("should parse the user agent once and share the guess between mounts", () => {
+    it("should give each mount its own copy of the guess", () => {
       const { renderHook, cleanup, useAdvancedUserAgentData } = loadHook({
         userAgent: USER_AGENTS.edge,
         getHighEntropyValues: () => new Promise(() => undefined),
       })
       const first = renderHook(() => useAdvancedUserAgentData())
+      const firstData = first.result.current[1] as AdvancedNavigatorUAData
+      firstData.os.name = "Linux"
+      firstData.cpu.architecture = "amd64"
+
       const second = renderHook(() => useAdvancedUserAgentData())
-      expect(second.result.current[1]).toBe(first.result.current[1])
+
+      expect(second.result.current[1]?.os.name).toBe("Windows")
+      expect(second.result.current[1]?.cpu.architecture).toBe("Unknown")
       cleanup()
     })
 
