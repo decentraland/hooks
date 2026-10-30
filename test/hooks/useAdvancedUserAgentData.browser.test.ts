@@ -483,13 +483,20 @@ describe("useAdvancedUserAgentData browser detection", () => {
     it("should resolve with the user agent data after the timeout and clear its timer", async () => {
       const { renderHook, act, cleanup, useAdvancedUserAgentData } =
         loadHook(environment)
+      const timeoutSpy = jest.spyOn(globalThis, "setTimeout")
+      const clearSpy = jest.spyOn(globalThis, "clearTimeout")
       const { result } = renderHook(() => useAdvancedUserAgentData())
+      const timeoutIndex = timeoutSpy.mock.calls.findIndex(
+        (call) => call[1] === 1500
+      )
+      expect(timeoutIndex).toBeGreaterThanOrEqual(0)
+      const timeoutHandle = timeoutSpy.mock.results[timeoutIndex].value
       await act(async () => {
         await jest.advanceTimersByTimeAsync(2000)
       })
       expect(result.current[0]).toBe(false)
       expect(result.current[1]?.browser.name).toBe("Brave")
-      expect(jest.getTimerCount()).toBe(0)
+      expect(clearSpy).toHaveBeenCalledWith(timeoutHandle)
       cleanup()
     })
   })
