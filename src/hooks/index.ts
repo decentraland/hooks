@@ -20,7 +20,10 @@ export type {
 } from "./useTranslation"
 
 // Hooks
-export { useAdvancedUserAgentData } from "./useAdvancedUserAgentData"
+export {
+  getAdvancedUserAgentData,
+  useAdvancedUserAgentData,
+} from "./useAdvancedUserAgentData"
 export { useAnalytics } from "./useAnalytics"
 export { useAsyncEffect } from "./useAsyncEffect"
 export { useAsyncMemo, createAsyncMemoState } from "./useAsyncMemo"
