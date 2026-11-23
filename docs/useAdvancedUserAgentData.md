@@ -98,11 +98,36 @@ function useEnrichedAnalytics() {
 }
 ```
 
+## Outside React: `getAdvancedUserAgentData`
+
+```typescript
+function getAdvancedUserAgentData(): Promise<
+  AdvancedNavigatorUAData | undefined
+>
+```
+
+The data the hook resolves (Client Hints included, with the same 1.5 second bound), for code that is not a component, such as a click handler or an analytics call. It shares the hook's cache: a page reads the Client Hints once, whichever asks first, and a hook that mounts after it resolved starts with `isLoading === false`. Each call gets its own copy. It resolves `undefined` on the server (no `window`).
+
+Its module imports nothing but `ua-parser-js`, and the package declares `"sideEffects": false`, so a bundler that tree-shakes leaves React, Sentry and the rest of the package out of a bundle that imports only this function.
+
+```typescript
+import { getAdvancedUserAgentData } from "@dcl/hooks"
+
+async function onJumpIn(position: string) {
+  const data = await getAdvancedUserAgentData()
+  track("Go To Explorer", {
+    position,
+    osName: data?.os.name ?? "unknown",
+    arch: data?.cpu.architecture.toLowerCase() ?? "unknown",
+  })
+}
+```
+
 ## Common Patterns
 
 - Use for device-specific rendering or feature gating.
 - Combine with analytics to enrich tracking events with device info.
-- The user agent is parsed once per page. `data` starts as that guess and is refined when the Client Hints resolve. Every instance that mounts before the cache resolves makes its own Client Hints call, so a given instance can see its data change once per such call, not strictly once.
+- The user agent is parsed once per page. `data` starts as that guess and is refined when the Client Hints resolve. Every instance, and every `getAdvancedUserAgentData()` call, that asks before the cache resolves shares one Client Hints read, so an instance's data changes once.
 - Each mount receives its own copy of the guess, so writing into `data` does not leak into other instances.
 
 ## Pitfalls

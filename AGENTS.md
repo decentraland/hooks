@@ -228,6 +228,27 @@ if (!isLoading && uaData) {
 
 ---
 
+## getAdvancedUserAgentData
+
+The data `useAdvancedUserAgentData` resolves, for code outside React. Shares the hook's cache and its single Client Hints read; each call gets its own copy.
+
+```typescript
+function getAdvancedUserAgentData(): Promise<
+  AdvancedNavigatorUAData | undefined
+>
+```
+
+```typescript
+import { getAdvancedUserAgentData } from "@dcl/hooks"
+
+const data = await getAdvancedUserAgentData()
+const arch = data?.cpu.architecture ?? "Unknown"
+```
+
+**Gotchas**: Resolves `undefined` on the server (no `window`). Its module imports only `ua-parser-js` and the package is `"sideEffects": false`, so importing just this function keeps React and Sentry out of a tree-shaken bundle. The same architecture caveats as the hook apply.
+
+---
+
 ## AnalyticsProvider
 
 Context provider for Segment analytics. Wrap your app with this to enable `useAnalytics` and `usePageTracking`. Skips initialization for bots.

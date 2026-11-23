@@ -67,3 +67,28 @@ describe("useAdvancedUserAgentData on the server", () => {
     })
   })
 })
+
+describe("getAdvancedUserAgentData on the server", () => {
+  afterEach(() => {
+    if (originalNavigator) {
+      Object.defineProperty(globalThis, "navigator", originalNavigator)
+    } else {
+      delete (globalThis as Record<string, unknown>).navigator
+    }
+  })
+
+  it("should resolve undefined without a window, even with Node's navigator", async () => {
+    Object.defineProperty(globalThis, "navigator", {
+      value: { userAgent: "Node.js/22" },
+      configurable: true,
+    })
+    let data: unknown = "unset"
+    await jest.isolateModulesAsync(async () => {
+      const {
+        getAdvancedUserAgentData,
+      } = require("../../src/hooks/useAdvancedUserAgentData")
+      data = await getAdvancedUserAgentData()
+    })
+    expect(data).toBeUndefined()
+  })
+})

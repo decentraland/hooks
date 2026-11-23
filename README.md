@@ -30,6 +30,7 @@ npm install @dcl/hooks
 | `usePatchState`            | Partial state updates for complex objects                     | [docs](docs/usePatchState.md)            |
 | `useInfiniteScroll`        | Infinite scroll with debounce and threshold                   | [docs](docs/useInfiniteScroll.md)        |
 | `useAdvancedUserAgentData` | Browser, OS, CPU, and device detection                        | [docs](docs/useAdvancedUserAgentData.md) |
+| `getAdvancedUserAgentData` | The same detection outside React (no React or Sentry import)  | [docs](docs/useAdvancedUserAgentData.md) |
 | `useAnalytics`             | Segment analytics tracking (requires `AnalyticsProvider`)     | [docs](docs/useAnalytics.md)             |
 | `usePageTracking`          | Page view tracking (requires `AnalyticsProvider`)             | [docs](docs/useAnalytics.md)             |
 | `useTranslation`           | i18n with ICU message syntax via `@formatjs/intl`             | [docs](docs/useTranslation.md)           |
